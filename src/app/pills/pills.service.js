@@ -10,6 +10,24 @@
 angular.module('polestar')
   .service('Pills', function (consts, vl, Spec, _, $window, Schema) {
     function instantiate() {
+
+      // var dummySpec = {
+      //   "data": {"url": "data/cars.json"},
+      //   "mark": "point",
+      //   "encoding": {
+      //     "x": {"field": "name","type": "nominal"},
+      //     "y": {"field": "Name","type": "nominal"}
+      //   },
+      //   "config": {
+      //     "cell": {"width": 400,"height": 400},
+      //     "facet": {"cell": {"width": 200,"height": 200}}
+      //   }
+      // };
+      //
+      // console.log("P", Pills.getSchemaPill(dummySpec.encoding.x));
+      //
+      // Spec.update(dummySpec);
+
       return {};
     }
 
@@ -87,6 +105,7 @@ angular.module('polestar')
     };
 
     Pills.dragDrop = function (etDragTo) {
+
       var encoding = _.clone(Spec.spec.encoding),
         etDragFrom = Pills.pills.etDragFrom;
       // update the clone of the encoding
@@ -107,6 +126,9 @@ angular.module('polestar')
       Spec.spec.encoding = encoding;
       etDragFrom = null;
     };
+
+
+
 
     return Pills;
   });

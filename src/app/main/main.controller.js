@@ -1,7 +1,8 @@
 'use strict';
 
 angular.module('polestar')
-  .controller('MainCtrl', function($scope, $document, Spec, Dataset, Config, consts, Chronicle, Logger, Bookmarks, Modals) {
+  .controller('MainCtrl', function($scope, $document, Spec, Dataset, Config, consts, Chronicle, Logger, Bookmarks, Modals, Prov) {
+
     $scope.Spec = Spec;
     $scope.Dataset = Dataset;
     $scope.Config = Config;
@@ -9,6 +10,7 @@ angular.module('polestar')
     $scope.consts = consts;
     $scope.showDevPanel = false;
     $scope.embedded = !!consts.embeddedData;
+    $scope.Prov = Prov;
 
     // undo/redo support
     $scope.canUndo = false;

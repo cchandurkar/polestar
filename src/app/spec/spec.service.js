@@ -8,7 +8,7 @@
  * Service in the polestar.
  */
 angular.module('polestar')
-  .service('Spec', function(_, dl, vl, ZSchema, Alerts, Config, Dataset, Schema) {
+  .service('Spec', function(_, dl, vl, ZSchema, Alerts, Config, Dataset, Schema, Prov) {
     var Spec = {
       /** @type {Object} verbose spec edited by the UI */
       spec: null,
@@ -120,6 +120,10 @@ angular.module('polestar')
         chart.cleanSpec = spec; // TODO: eliminate
         chart.shorthand = vl.shorthand.shorten(spec);
       }
+
+      // Capture Provenance
+      Prov.capture(spec);
+
     };
 
     Spec.reset();
