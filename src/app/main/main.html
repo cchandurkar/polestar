@@ -9,8 +9,9 @@
               <i class="fa fa-bookmark"></i>
               Bookmarks ({{Bookmarks.length}})
             </a>
-            <a class="command" ng-click="chron.undo()" ng-class="{disabled: !canUndo}"><i class="fa fa-undo"></i> Undo</a>
-            <a class="command" ng-click="chron.redo()" ng-class="{disabled: !canRedo}"><i class="fa fa-repeat"></i> Redo</a>
+            <a class="command" ng-click="Prov.undo()" ng-class="{disabled: !canUndo}"><i class="fa fa-undo"></i> Undo</a>
+            <a class="command" ng-click="Prov.redo()" ng-class="{disabled: !canRedo}"><i class="fa fa-repeat"></i> Redo</a>
+            <a class="command" ng-click="Prov.showGallery()"><i class="fa fa-archive"></i> Provenance</a>
           </div>
         </div>
         <div class="absolute-top-right">
