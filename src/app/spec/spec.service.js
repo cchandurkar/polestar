@@ -8,7 +8,7 @@
  * Service in the polestar.
  */
 angular.module('polestar')
-  .service('Spec', function(_, dl, vl, ZSchema, Alerts, Config, Dataset, Schema, Prov) {
+  .service('Spec', function(_, dl, vl, ZSchema, Alerts, Config, Dataset, Schema) {
     var Spec = {
       /** @type {Object} verbose spec edited by the UI */
       spec: null,
@@ -121,9 +121,17 @@ angular.module('polestar')
         chart.shorthand = vl.shorthand.shorten(spec);
       }
 
-      // Capture Provenance
-      Prov.capture(spec);
+    };
 
+    Spec.updateProvListeners = [];
+    Spec.updateByProv = function(data){
+      var spec = data.spec;
+      Spec.update(spec); // Updating in-place bhenchod
+      console.log("SPEC", data.spec);
+      // data.spec = Spec.spec;
+      Spec.updateProvListeners.forEach(function(lstnr){
+        lstnr(data);
+      });
     };
 
     Spec.reset();

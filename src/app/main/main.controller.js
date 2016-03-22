@@ -46,8 +46,8 @@ angular.module('polestar')
         ['Dataset.dataset', 'Dataset.dataschema','Dataset.stats', 'Config.config']);
 
       $scope.canUndoRedo = function() {
-        $scope.canUndo = $scope.chron.canUndo();
-        $scope.canRedo = $scope.chron.canRedo();
+        $scope.canUndo = $scope.Prov.canUndo();
+        $scope.canRedo = $scope.Prov.canRedo();
       };
       $scope.chron.addOnAdjustFunction($scope.canUndoRedo);
       $scope.chron.addOnUndoFunction($scope.canUndoRedo);
@@ -62,15 +62,15 @@ angular.module('polestar')
 
       angular.element($document).on('keydown', function(e) {
         if (e.keyCode === 'Z'.charCodeAt(0) && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
-          $scope.chron.undo();
+          $scope.Prov.undo();
           $scope.$digest();
           return false;
         } else if (e.keyCode === 'Y'.charCodeAt(0) && (e.ctrlKey || e.metaKey)) {
-          $scope.chron.redo();
+          $scope.Prov.redo();
           $scope.$digest();
           return false;
         } else if (e.keyCode === 'Z'.charCodeAt(0) && (e.ctrlKey || e.metaKey) && e.shiftKey) {
-          $scope.chron.redo();
+          $scope.Prov.redo();
           $scope.$digest();
           return false;
         }

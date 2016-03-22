@@ -8,26 +8,8 @@
  * Service in the polestar.
  */
 angular.module('polestar')
-  .service('Pills', function (consts, vl, Spec, _, $window, Schema) {
+  .service('Pills', function (consts, vl, Spec, _, $window, Schema, Prov) {
     function instantiate() {
-
-      // var dummySpec = {
-      //   "data": {"url": "data/cars.json"},
-      //   "mark": "point",
-      //   "encoding": {
-      //     "x": {"field": "name","type": "nominal"},
-      //     "y": {"field": "Name","type": "nominal"}
-      //   },
-      //   "config": {
-      //     "cell": {"width": 400,"height": 400},
-      //     "facet": {"cell": {"width": 200,"height": 200}}
-      //   }
-      // };
-      //
-      // console.log("P", Pills.getSchemaPill(dummySpec.encoding.x));
-      //
-      // Spec.update(dummySpec);
-
       return {};
     }
 
@@ -43,9 +25,16 @@ angular.module('polestar')
       };
     };
 
+    Spec.updateProvListeners.push(function(data){
+      console.log("data", data);
+      updateFieldDef(data.spec.encoding, {}, data.channel);
+    });
 
     /** copy value from the pill to the fieldDef */
+
     function updateFieldDef(encoding, pill, channel){
+      console.log("updateFieldDef");
+      console.log(arguments);
       var type = pill.type,
         supportedRole = vl.channel.getSupportedRole(channel),
         dimensionOnly = supportedRole.dimension && !supportedRole.measure;
@@ -62,7 +51,8 @@ angular.module('polestar')
           pill.timeUnit = consts.defaultTimeFn;
         }
       } else if (!pill.field) {
-        // no name, it's actually the empty shelf that
+        // no name, it's actually the emp
+        // y shelf that
         // got processed in the opposite direction
         pill = {};
       }
@@ -87,11 +77,13 @@ angular.module('polestar')
     }
 
     Pills.remove = function (channel) {
+      // Prov.removePill(channel, _.clone(Pills.pills[channel]));
       delete Pills.pills[channel];
       updateFieldDef(Spec.spec.encoding, {}, channel); // remove all pill detail from the fieldDef
     };
 
     Pills.update = function (channel) {
+      console.log("Update");
       updateFieldDef(Spec.spec.encoding, Pills.pills[channel], channel);
     };
 
@@ -106,8 +98,11 @@ angular.module('polestar')
 
     Pills.dragDrop = function (etDragTo) {
 
+
+      // Get Encoding and Drag From
       var encoding = _.clone(Spec.spec.encoding),
         etDragFrom = Pills.pills.etDragFrom;
+
       // update the clone of the encoding
       // console.log('dragDrop', encoding, Pills, 'from:', etDragFrom, Pills.pills[etDragFrom]);
       if(etDragFrom){
@@ -118,12 +113,21 @@ angular.module('polestar')
       }
       updateFieldDef(encoding, Pills.pills[etDragTo] || {}, etDragTo);
 
+      // Finally, update the encoding only once to prevent glitches
+      Spec.spec.encoding = encoding;
+
+      // Add to Provenance
+      if(etDragFrom){ // Moving
+        Prov.movePill(etDragFrom, etDragTo, encoding[etDragTo]);
+      } else { // Newly Added
+        Prov.addPill(etDragTo, encoding[etDragTo]);
+      }
+
       // console.log('Pills.dragDrop',
       //   'from:', etDragFrom, Pills.pills[etDragFrom], encoding[etDragFrom],
       //   'to:', etDragTo, Pills.pills[etDragTo], encoding[etDragTo]);
 
-      // Finally, update the encoding only once to prevent glitches
-      Spec.spec.encoding = encoding;
+
       etDragFrom = null;
     };
 
