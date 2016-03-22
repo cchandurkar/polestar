@@ -77,6 +77,7 @@ angular.module('polestar')
     }
 
     Pills.remove = function (channel) {
+      // Prov.removePill(channel, _.clone(Pills.pills[channel]));
       delete Pills.pills[channel];
       updateFieldDef(Spec.spec.encoding, {}, channel); // remove all pill detail from the fieldDef
     };

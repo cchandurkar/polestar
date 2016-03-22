@@ -52,7 +52,7 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
 
   // Remove Pill
   var removePill = trail.createAction('removePill')
-    .toString(function(data){ return "Pill Remove"; })
+    .toString(function(data){ return "Removed \"" + data.encoding.field + "\" from \"" + data.channel + "\""; })
     .forward(function(state, diff){ })
     .inverse(function(state, prevDiff){ });
 
@@ -95,6 +95,15 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
     trail.record(movePill, {
       channelFrom: etDragFrom,
       channelTo: etDragTo,
+      encoding: encoding,
+      spec: Spec.spec
+    });
+  };
+
+  // Remove Pill
+  Prov.removePill = function(channel, encoding){
+    trail.record(removePill, {
+      channel: removePill,
       encoding: encoding,
       spec: Spec.spec
     });
