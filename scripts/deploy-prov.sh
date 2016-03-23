@@ -24,6 +24,7 @@ cd ..
 npm run build
 rm -rf dist/.git
 mv gh-pages/.git dist
+cp src/provenance dist
 rm -rf gh-pages
 cd dist
 git add --all
