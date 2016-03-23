@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('polestar')
-  .directive('functionSelect', function(_, consts, vl, Pills, Logger, Schema) {
+  .directive('functionSelect', function(_, consts, vl, Pills, Logger, Schema, Prov) {
     return {
       templateUrl: 'components/functionselect/functionselect.html',
       restrict: 'E',
@@ -24,6 +24,7 @@ angular.module('polestar')
 
         function getFns(type) {
 
+
           if (type === 'temporal') {
             return Schema.schema.definitions.TimeUnit.enum;
           }
@@ -45,6 +46,7 @@ angular.module('polestar')
 
         scope.selectChanged = function() {
           Logger.logInteraction(Logger.actions.FUNC_CHANGE, scope.func.selected);
+          Prov.updatePillFunc(fieldPill(), scope.func.selected);
         };
 
         // FIXME func.selected logic should be all moved to selectChanged
@@ -72,6 +74,7 @@ angular.module('polestar')
 
         // when parent objects modify the field
         scope.$watch('fieldDef', function(pill) {
+
           if (!pill) {
             return;
           }

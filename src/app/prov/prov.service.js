@@ -16,17 +16,12 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
 
   // Undo
   trail.undo(function(current, prev){
-    if(prev){
-      console.log("Prev", prev);
-      Spec.updateByProv(prev);
-    } else {
-      Spec.reset();
-    }
+    Spec.spec = prev ? prev.spec : Spec.instantiate();
   });
 
   // Redo
   trail.redo(function(current, next){
-    Spec.update(next.spec);
+    Spec.spec = next.spec;
   });
 
   // Done
@@ -41,38 +36,51 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
 
   // Set Checkpoint
   trail.checkpoint().set(function(spec){
-    Spec.update(spec);
+    console.log("Setting Checkpoint", spec);
+    Spec.spec = spec;
   });
+
+  // Common Forward Action
+  var forwardCommon = function(state, next){
+      console.log("Forawrd", next.spec);
+      state = next.spec;
+      return state;
+  };
+
+  //  Common Inverse Action
+  var inverseCommon = function(state, current, prev){
+    console.log("Inverse Args", arguments);
+    if(prev){
+      console.log("Inverse", prev.spec);
+      state = prev.spec;
+    }
+    return state;
+  };
 
   // Create Action
   var addPill = trail.createAction('addPill')
-    .toString(function(data){ return "Added \"" + data.encoding.field + "\" to \"" + data.channel +"\""; })
-    .forward(function(state, diff){ })
-    .inverse(function(state, prevDiff){ });
+    .toString(function(data){ return "Added \"" + data.pill.field + "\" to \"" + data.dragTo +"\""; })
+    .forward(forwardCommon).inverse(inverseCommon);
 
   // Remove Pill
   var removePill = trail.createAction('removePill')
-    .toString(function(data){ return "Removed \"" + data.encoding.field + "\" from \"" + data.channel + "\""; })
-    .forward(function(state, diff){ })
-    .inverse(function(state, prevDiff){ });
-
-  // Update Type
-  var updateType = trail.createAction('updateType')
-    .toString(function(diff){ return "Type Updated"; })
-    .forward(function(state, diff){ })
-    .inverse(function(state, prevDiff){ });
+    .toString(function(data){ return "Removed \"" + data.pill.field + "\" from \"" + data.channel + "\""; })
+    .forward(forwardCommon).inverse(inverseCommon);
 
   // Moved Pills
   var movePill = trail.createAction('movePill')
-    .toString(function(data){ return data.encoding.field + " moved from \"" + data.channelFrom + "\" to \"" + data.channelTo + "\""; })
-    .forward(function(state, diff){ })
-    .inverse(function(state, prevDiff){ });
+    .toString(function(data){ return data.pill.field + " moved from \"" + data.dragFrom + "\" to \"" + data.dragTo + "\""; })
+    .forward(forwardCommon).inverse(inverseCommon);
 
-  // Moved Pills
-  var updateMarkType = trail.createAction('movedPills')
-    .toString(function(data){ return "Pill Moved"; })
-    .forward(function(state, diff){ })
-    .inverse(function(state, prevDiff){ });
+  // Update Pill Function
+  var updatePillFunc = trail.createAction('updatePillFunc')
+    .toString(function(data){ return "Updated Function of \"" + data.pill.field + "\" to \"" + data.func + "\""; })
+    .forward(forwardCommon).inverse(inverseCommon);
+
+  // Update Pill Mark
+  var updateMark = trail.createAction('updateMark')
+    .toString(function(data){ return "Updated Mark to \"" + data.mark + "\""})
+    .forward(forwardCommon).inverse(inverseCommon);
 
   // Provenance
   var Prov = { };
@@ -82,29 +90,46 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
   // --------------------------------------
 
   // Adding new pill
-  Prov.addPill = function(etDragTo, encoding){
+  Prov.addPill = function(pill, dragTo){
     trail.record(addPill, {
-      channel: etDragTo,
-      encoding: encoding,
+      pill: pill,
+      dragTo: dragTo,
       spec: Spec.spec
     });
   };
 
   // Moving Pill
-  Prov.movePill = function(etDragFrom, etDragTo, encoding){
+  Prov.movePill = function(pill, dragFrom, dragTo){
     trail.record(movePill, {
-      channelFrom: etDragFrom,
-      channelTo: etDragTo,
-      encoding: encoding,
+      pill: pill,
+      dragFrom: dragFrom,
+      dragTo: dragTo,
       spec: Spec.spec
     });
   };
 
   // Remove Pill
-  Prov.removePill = function(channel, encoding){
+  Prov.removePill = function(pill, channel){
     trail.record(removePill, {
-      channel: removePill,
-      encoding: encoding,
+      pill: pill,
+      channel: channel,
+      spec: Spec.spec
+    });
+  };
+
+  // Update Pill
+  Prov.updatePillFunc = function(pill, func){
+    trail.record(updatePillFunc, {
+      pill: pill,
+      func: func,
+      spec: Spec.spec
+    });
+  };
+
+  // Update Pill Mark
+  Prov.updateMark = function(mark){
+    trail.record(updateMark, {
+      mark: mark,
       spec: Spec.spec
     });
   };

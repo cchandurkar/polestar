@@ -25,16 +25,9 @@ angular.module('polestar')
       };
     };
 
-    Spec.updateProvListeners.push(function(data){
-      console.log("data", data);
-      updateFieldDef(data.spec.encoding, {}, data.channel);
-    });
-
     /** copy value from the pill to the fieldDef */
 
     function updateFieldDef(encoding, pill, channel){
-      console.log("updateFieldDef");
-      console.log(arguments);
       var type = pill.type,
         supportedRole = vl.channel.getSupportedRole(channel),
         dimensionOnly = supportedRole.dimension && !supportedRole.measure;
@@ -77,13 +70,12 @@ angular.module('polestar')
     }
 
     Pills.remove = function (channel) {
-      // Prov.removePill(channel, _.clone(Pills.pills[channel]));
+      Prov.removePill(Pills.pills[channel], channel);
       delete Pills.pills[channel];
       updateFieldDef(Spec.spec.encoding, {}, channel); // remove all pill detail from the fieldDef
     };
 
     Pills.update = function (channel) {
-      console.log("Update");
       updateFieldDef(Spec.spec.encoding, Pills.pills[channel], channel);
     };
 
@@ -98,10 +90,11 @@ angular.module('polestar')
 
     Pills.dragDrop = function (etDragTo) {
 
-
       // Get Encoding and Drag From
       var encoding = _.clone(Spec.spec.encoding),
         etDragFrom = Pills.pills.etDragFrom;
+
+        if(etDragTo === etDragFrom) return;
 
       // update the clone of the encoding
       // console.log('dragDrop', encoding, Pills, 'from:', etDragFrom, Pills.pills[etDragFrom]);
@@ -118,9 +111,9 @@ angular.module('polestar')
 
       // Add to Provenance
       if(etDragFrom){ // Moving
-        Prov.movePill(etDragFrom, etDragTo, encoding[etDragTo]);
+        Prov.movePill(Pills.pills[etDragTo], etDragFrom, etDragTo);
       } else { // Newly Added
-        Prov.addPill(etDragTo, encoding[etDragTo]);
+        Prov.addPill(Pills.pills[etDragTo], etDragTo);
       }
 
       // console.log('Pills.dragDrop',

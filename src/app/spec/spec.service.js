@@ -123,17 +123,6 @@ angular.module('polestar')
 
     };
 
-    Spec.updateProvListeners = [];
-    Spec.updateByProv = function(data){
-      var spec = data.spec;
-      Spec.update(spec); // Updating in-place bhenchod
-      console.log("SPEC", data.spec);
-      // data.spec = Spec.spec;
-      Spec.updateProvListeners.forEach(function(lstnr){
-        lstnr(data);
-      });
-    };
-
     Spec.reset();
     Dataset.onUpdate.push(Spec.reset);
 

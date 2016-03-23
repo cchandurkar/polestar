@@ -74,6 +74,7 @@ angular.module('polestar')
 
         scope.$watch('encoding[channel]', function(fieldDef) {
           Pills.pills[scope.channel] = fieldDef ? _.cloneDeep(fieldDef) : {};
+          console.log("Updating Channel", Pills.pills[scope.channel]);
         }, true);
 
         scope.$watchGroup(['allowedCasting[Dataset.dataschema.byName[encoding[channel].field].type]', 'encoding[channel].aggregate'], function(arr){

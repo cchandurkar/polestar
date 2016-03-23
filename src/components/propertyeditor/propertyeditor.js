@@ -25,7 +25,7 @@ angular.module('polestar')
       },
       link: function postLink(scope /*, element, attrs*/) {
         scope.hasAuto = scope.default === undefined;
-        
+
         //TODO(kanitw): consider renaming
         scope.automodel = { value: false };
 
