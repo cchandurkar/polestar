@@ -159,14 +159,5 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
     trail.openGallery();
   };
 
-  // if(Object.keys(diff).length > 1){
-  //   var keys = Object.keys(diff).join(", ");
-  //   var idx = keys.lastIndexOf(",");
-  //   return "Updated " + keys.substr(0, idx) + " and " + keys.substr(idx + 1);
-  // } else {
-  //   return "Updated " + Object.keys(diff)[0];
-  // }
-
-
   return Prov;
 });
