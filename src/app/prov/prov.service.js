@@ -36,22 +36,18 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
 
   // Set Checkpoint
   trail.checkpoint().set(function(spec){
-    console.log("Setting Checkpoint", spec);
     Spec.spec = spec;
   });
 
   // Common Forward Action
   var forwardCommon = function(state, next){
-      console.log("Forawrd", next.spec);
       state = next.spec;
       return state;
   };
 
   //  Common Inverse Action
   var inverseCommon = function(state, current, prev){
-    console.log("Inverse Args", arguments);
     if(prev){
-      console.log("Inverse", prev.spec);
       state = prev.spec;
     }
     return state;
@@ -132,11 +128,6 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
       mark: mark,
       spec: Spec.spec
     });
-  };
-
-  // On Spec Updates
-  Prov.onSpecUpdate = function(fromSpec, toSpec){
-
   };
 
   // --------------------------------------
