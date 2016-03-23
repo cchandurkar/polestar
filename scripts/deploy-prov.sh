@@ -27,6 +27,6 @@ mv gh-pages/.git dist
 rm -rf gh-pages
 cd dist
 git add --all
-git commit -am "release"
-git push --tags
+git commit -m "release"
+git push origin gh-pages
 cd ..
