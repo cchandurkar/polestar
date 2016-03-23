@@ -25,6 +25,7 @@ npm run build
 rm -rf dist/.git
 mv gh-pages/.git dist
 cp src/provenance dist
+cp src/jsondiffpatch dist
 rm -rf gh-pages
 cd dist
 git add --all
