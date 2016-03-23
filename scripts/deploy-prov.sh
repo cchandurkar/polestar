@@ -29,7 +29,7 @@ rm -rf dist/.git
 mv gh-pages/.git dist
 rm -rf gh-pages
 cd dist
-git add .
+git add --all
 git commit -am "release $version $gitsha"
 git tag -am "Release v$version." "v$version"
 git push --tags
