@@ -20,7 +20,7 @@ fi
 gitsha=$(git rev-parse HEAD)
 version=$(cat package.json | jq .version | sed -e 's/^"//'  -e 's/"$//')
 
-git clone git@github.com:cchandurkar/polestar.git gh-pages
+git clone https://github.com/cchandurkar/polestar.git gh-pages
 cd gh-pages
 git checkout gh-pages
 cd ..
