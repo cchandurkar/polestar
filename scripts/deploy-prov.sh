@@ -17,9 +17,6 @@ else
   exit 1
 fi
 
-gitsha=$(git rev-parse HEAD)
-version=$(cat package.json | jq .version | sed -e 's/^"//'  -e 's/"$//')
-
 git clone https://github.com/cchandurkar/polestar.git gh-pages
 cd gh-pages
 git checkout gh-pages
@@ -30,7 +27,6 @@ mv gh-pages/.git dist
 rm -rf gh-pages
 cd dist
 git add --all
-git commit -am "release $version $gitsha"
-git tag -am "Release v$version." "v$version"
+git commit -am "release"
 git push --tags
 cd ..
