@@ -91,6 +91,8 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
       pill: pill,
       dragTo: dragTo,
       spec: Spec.spec
+    }, function(change){
+      Prov.captureThumbnail(change, 800);
     });
   };
 
@@ -101,6 +103,8 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
       dragFrom: dragFrom,
       dragTo: dragTo,
       spec: Spec.spec
+    }, function(change){
+      Prov.captureThumbnail(change, 800);
     });
   };
 
@@ -110,6 +114,8 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
       pill: pill,
       channel: channel,
       spec: Spec.spec
+    }, function(change){
+      Prov.captureThumbnail(change, 800);
     });
   };
 
@@ -119,6 +125,8 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
       pill: pill,
       func: func,
       spec: Spec.spec
+    }, function(change){
+      Prov.captureThumbnail(change, 800);
     });
   };
 
@@ -127,6 +135,8 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
     trail.record(updateMark, {
       mark: mark,
       spec: Spec.spec
+    }, function(change){
+      Prov.captureThumbnail(change, 800);
     });
   };
 
@@ -171,6 +181,13 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
       }
     });
   };
+
+  Prov.captureThumbnail = function(change, timeout){
+    setTimeout(function(){
+      var canvas = d3.select('.vega canvas').node();
+      change.setThumbnail(canvas.toDataURL());
+    }, timeout);
+  }
 
   Prov.importGist = function(){
     trail.importGist(prompt("Enter gist id"));
