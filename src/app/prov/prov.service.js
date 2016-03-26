@@ -154,6 +154,28 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
     trail.next();
   };
 
+  Prov.loadJSON = function(){
+    trail.loadJSON();
+  };
+
+  Prov.saveJSON = function(){
+    trail.saveJSON();
+  };
+
+  Prov.exportGist = function(){
+    trail.exportToGist(null, function(err, gist){
+      if(err){
+        alert("Export Failed:\n\n" + err.message);
+      } else {
+        alert("Exported To: " + gist.id);
+      }
+    });
+  };
+
+  Prov.importGist = function(){
+    trail.importGist(prompt("Enter gist id"));
+  };
+
   // Show Gallery
   Prov.showGallery = function(){
     trail.openGallery();

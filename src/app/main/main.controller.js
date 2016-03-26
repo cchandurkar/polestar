@@ -15,6 +15,7 @@ angular.module('polestar')
     // undo/redo support
     $scope.canUndo = false;
     $scope.canRedo = false;
+    $scope.canExport = $scope.canUndo || $scope.canRedo;
 
     // bookmark
     $scope.showModal = function(modalId) {
@@ -48,6 +49,7 @@ angular.module('polestar')
       $scope.canUndoRedo = function() {
         $scope.canUndo = $scope.Prov.canUndo();
         $scope.canRedo = $scope.Prov.canRedo();
+        $scope.canExport = $scope.canUndo || $scope.canRedo;
       };
       $scope.chron.addOnAdjustFunction($scope.canUndoRedo);
       $scope.chron.addOnUndoFunction($scope.canUndoRedo);

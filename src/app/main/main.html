@@ -11,7 +11,11 @@
             </a>
             <a class="command" ng-click="Prov.undo()" ng-class="{disabled: !canUndo}"><i class="fa fa-undo"></i> Undo</a>
             <a class="command" ng-click="Prov.redo()" ng-class="{disabled: !canRedo}"><i class="fa fa-repeat"></i> Redo</a>
-            <a class="command" ng-click="Prov.showGallery()"><i class="fa fa-archive"></i> Provenance</a>
+            <a class="command" ng-click="Prov.exportGist()" ng-class="{disabled: !canExport}"><i class="fa fa-cloud-upload"></i> Export Gist</a>
+            <a class="command" ng-click="Prov.importGist()"><i class="fa fa-cloud-download"></i> Import Gist</a>
+            <a class="command" ng-click="Prov.saveJSON()" ng-class="{disabled: !canExport}"><i class="fa fa-download"></i> Save</a>
+            <a class="command" ng-click="Prov.loadJSON()"><i class="fa fa-upload"></i> Load</a>
+            <a class="command" ng-click="Prov.showGallery()"><i class="fa fa-archive"></i> Gallery</a>
           </div>
         </div>
         <div class="absolute-top-right">
