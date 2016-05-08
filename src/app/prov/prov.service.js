@@ -14,21 +14,6 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
     .addControls()
     .renderTo();
 
-  // Undo
-  trail.undo(function(current, prev){
-    Spec.spec = prev ? prev.spec : Spec.instantiate();
-  });
-
-  // Redo
-  trail.redo(function(current, next){
-    Spec.spec = next.spec;
-  });
-
-  // Done
-  trail.done(function(){
-
-  });
-
   // Get Checkpoint
   trail.checkpoint().get(function(){
     return Spec.spec;
@@ -45,6 +30,9 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
       return state;
   };
 
+  // Default Spec
+  var defaultSpec = Spec.spec;
+
   //  Common Inverse Action
   var inverseCommon = function(state, current, prev){
     if(prev){
@@ -55,7 +43,7 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
 
   // Common Undo
   var undoCommon = function(current, previous){
-    Spec.spec = previous.spec;
+    Spec.spec = previous ? previous.spec : defaultSpec;
   };
 
   // Common Redo
@@ -95,15 +83,13 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
     format: function(data){ return "Updated Function of \"" + data.pill.field + "\" to \"" + data.func + "\""; }
   });
 
-  // Update Pill Function
-  var updatePillFunc = trail.createAction('updatePillFunc')
-    .toString(function(data){ return "Updated Function of \"" + data.pill.field + "\" to \"" + data.func + "\""; })
-    .forward(forwardCommon).inverse(inverseCommon);
-
-  // Update Pill Mark
-  var updateMark = trail.createAction('updateMark')
-    .toString(function(data){ return "Updated Mark to \"" + data.mark + "\""})
-    .forward(forwardCommon).inverse(inverseCommon);
+  var updateMark = trail.createAction('updateMark', {
+    forward: forwardCommon,
+    inverse: inverseCommon,
+    undo: undoCommon,
+    redo: redoCommon,
+    format: function(data){ return "Updated Mark to \"" + data.mark + "\""; }
+  });
 
   // Provenance
   var Prov = { };
