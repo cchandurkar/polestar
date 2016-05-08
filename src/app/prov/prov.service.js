@@ -10,7 +10,7 @@
 angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Spec) {
 
   // Create Trail
-  var trail = jstrails.create()
+  var trail = SIMProv.UITrail()
     .addControls()
     .renderTo();
 
@@ -53,20 +53,47 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
     return state;
   };
 
-  // Create Action
-  var addPill = trail.createAction('addPill')
-    .toString(function(data){ return "Added \"" + data.pill.field + "\" to \"" + data.dragTo +"\""; })
-    .forward(forwardCommon).inverse(inverseCommon);
+  // Common Undo
+  var undoCommon = function(current, previous){
+    Spec.spec = previous.spec;
+  };
 
-  // Remove Pill
-  var removePill = trail.createAction('removePill')
-    .toString(function(data){ return "Removed \"" + data.pill.field + "\" from \"" + data.channel + "\""; })
-    .forward(forwardCommon).inverse(inverseCommon);
+  // Common Redo
+  var redoCommon = function(current, next){
+    Spec.spec = next.spec;
+  };
 
-  // Moved Pills
-  var movePill = trail.createAction('movePill')
-    .toString(function(data){ return data.pill.field + " moved from \"" + data.dragFrom + "\" to \"" + data.dragTo + "\""; })
-    .forward(forwardCommon).inverse(inverseCommon);
+  var addPill = trail.createAction('addPill', {
+    forward: forwardCommon,
+    inverse: inverseCommon,
+    undo: undoCommon,
+    redo: redoCommon,
+    format: function(data){ return "Added \"" + data.pill.field + "\" to \"" + data.dragTo +"\""; }
+  });
+
+  var removePill = trail.createAction('addPill', {
+    forward: forwardCommon,
+    inverse: inverseCommon,
+    undo: undoCommon,
+    redo: redoCommon,
+    format: function(data){ return "Removed \"" + data.pill.field + "\" to \"" + data.channel +"\""; }
+  });
+
+  var movePill = trail.createAction('movePill', {
+    forward: forwardCommon,
+    inverse: inverseCommon,
+    undo: undoCommon,
+    redo: redoCommon,
+    format: function(data){ return data.pill.field + " moved from \"" + data.dragFrom + "\" to \"" + data.dragTo + "\""; }
+  });
+
+  var updatePillFunc = trail.createAction('updatePillFunc', {
+    forward: forwardCommon,
+    inverse: inverseCommon,
+    undo: undoCommon,
+    redo: redoCommon,
+    format: function(data){ return "Updated Function of \"" + data.pill.field + "\" to \"" + data.func + "\""; }
+  });
 
   // Update Pill Function
   var updatePillFunc = trail.createAction('updatePillFunc')
