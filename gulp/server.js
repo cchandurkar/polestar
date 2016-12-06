@@ -28,7 +28,9 @@ function browserSyncInit(baseDir, files) {
   });
 }
 
-gulp.task('serve', ['watch', 'jshint'], function () {
+
+//Comment
+gulp.task('serve', ['watch'], function () {
   browserSyncInit([
     paths.tmp + '/serve',
     paths.src
@@ -42,7 +44,6 @@ gulp.task('serve', ['watch', 'jshint'], function () {
     paths.src + '/{app,components}/**/*.html'
   ]);
 
-  gulp.start('test:auto');
 });
 
 gulp.task('serve:dist', ['build'], function () {

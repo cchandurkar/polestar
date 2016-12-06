@@ -16,40 +16,42 @@ angular.module('polestar').service('Prov', function ($window, vl, consts, dl, Sp
 
   // Get Checkpoint
   trail.checkpoint().get(function(){
-    return Spec.spec;
+    return JSON.parse(JSON.stringify(Spec.spec));
   });
 
   // Set Checkpoint
   trail.checkpoint().set(function(spec){
-    Spec.spec = spec;
+    Spec.spec = JSON.parse(JSON.stringify(spec));
   });
 
   // Common Forward Action
   var forwardCommon = function(state, next){
       state = next.spec;
-      return state;
+      return JSON.parse(JSON.stringify( state ) );
   };
 
   // Default Spec
-  var defaultSpec = Spec.spec;
+  var defaultSpec = JSON.parse(JSON.stringify(Spec.spec));
 
   //  Common Inverse Action
   var inverseCommon = function(state, current, prev){
     if(prev){
       state = prev.spec;
     }
-    return state;
+    return JSON.parse(JSON.stringify(state));
   };
 
   // Common Undo
   var undoCommon = function(current, previous){
-    Spec.spec = previous ? previous.spec : defaultSpec;
+    Spec.spec = previous ? JSON.parse(JSON.stringify(previous.spec)) : JSON.parse(JSON.stringify(defaultSpec));
   };
 
   // Common Redo
   var redoCommon = function(current, next){
-    Spec.spec = next.spec;
+    Spec.spec = JSON.parse(JSON.stringify(next.spec));
   };
+
+  var abcd = "Def";
 
   var addPill = trail.createAction('addPill', {
     forward: forwardCommon,
