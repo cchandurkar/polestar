@@ -27,6 +27,7 @@
     "angular-mocks": "~1.4.9"
   },
   "resolutions": {
-    "vega": "~2.5.0"
+    "vega": "~2.5.0",
+    "vega-lite": "~1.0.3"
   }
 }
