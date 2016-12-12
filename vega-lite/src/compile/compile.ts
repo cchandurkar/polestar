@@ -57,19 +57,18 @@ function assemble(model: Model) {
 }
 
 export function assembleRootGroup(model: Model) {
-  let rootGroup:any = extend(
-    {
+  let rootGroup:any = extend({
       name: model.name('root'),
       type: 'group',
     },
     model.description() ? {description: model.description()} : {},
     {
-      from: {data: model.name(LAYOUT +'')},
+      from: {data: LAYOUT},
       properties: {
         update: extend(
           {
-            width: {field: model.name('width')},
-            height: {field: model.name('height')}
+            width: {field: 'width'},
+            height: {field: 'height'}
           },
           model.assembleParentGroupProperties(model.config().cell)
         )

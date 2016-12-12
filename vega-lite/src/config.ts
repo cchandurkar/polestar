@@ -93,11 +93,6 @@ export enum Shape {
     TRIANGLEDOWN = 'triangle-down' as any,
 }
 
-export enum Orient {
-  HORIZONTAL = 'horizontal' as any,
-  VERTICAL = 'vertical' as any
-}
-
 export enum HorizontalAlign {
     LEFT = 'left' as any,
     RIGHT = 'right' as any,
@@ -114,6 +109,8 @@ export enum FontStyle {
     NORMAL = 'normal' as any,
     ITALIC = 'italic' as any,
 }
+
+
 
 export enum Interpolate {
     /** piecewise linear segments, as in a polyline */
@@ -258,7 +255,7 @@ export interface MarkConfig {
    * For stacked charts, this is always determined by the orientation of the stack;
    * therefore explicitly specified value will be ignored.
    */
-  orient?: Orient;
+  orient?: string;
 
   // ---------- Interpolation: Line / area ----------
   /**
@@ -296,9 +293,9 @@ export interface MarkConfig {
 
   // ---------- Point ----------
   /**
-   * The symbol shape to use. One of circle (default), square, cross, diamond, triangle-up, or triangle-down, or a custom SVG path.
+   * The symbol shape to use. One of circle (default), square, cross, diamond, triangle-up, or triangle-down.
    */
-  shape?: Shape | string;
+  shape?: Shape;
 
   // ---------- Point Size (Point / Square / Circle) ----------
   /**
@@ -392,6 +389,7 @@ export const defaultMarkConfig: MarkConfig = {
   baseline: VerticalAlign.MIDDLE,
   text: 'Abc',
 
+  shortTimeLabels: false,
   applyColorToBackground: false
 };
 
@@ -450,7 +448,7 @@ export interface Config {
 
 export const defaultConfig: Config = {
   numberFormat: 's',
-  timeFormat: '%b %d, %Y',
+  timeFormat: '%Y-%m-%d',
   countTitle: 'Number of Records',
 
   cell: defaultCellConfig,

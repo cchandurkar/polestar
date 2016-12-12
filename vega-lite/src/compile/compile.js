@@ -29,11 +29,11 @@ function assembleRootGroup(model) {
         name: model.name('root'),
         type: 'group',
     }, model.description() ? { description: model.description() } : {}, {
-        from: { data: model.name(data_1.LAYOUT + '') },
+        from: { data: data_1.LAYOUT },
         properties: {
             update: util_1.extend({
-                width: { field: model.name('width') },
-                height: { field: model.name('height') }
+                width: { field: 'width' },
+                height: { field: 'height' }
             }, model.assembleParentGroupProperties(model.config().cell))
         }
     });

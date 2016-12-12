@@ -49,9 +49,7 @@ export const AGGREGATE_OPS = [
 export const SUM_OPS = [
     AggregateOp.COUNT,
     AggregateOp.SUM,
-    AggregateOp.DISTINCT,
-    AggregateOp.VALID,
-    AggregateOp.MISSING
+    AggregateOp.DISTINCT
 ];
 
 export const SHARED_DOMAIN_OPS = [
@@ -65,3 +63,5 @@ export const SHARED_DOMAIN_OPS = [
     AggregateOp.MIN,
     AggregateOp.MAX,
 ];
+
+// TODO: move supportedTypes, supportedEnums from schema to here

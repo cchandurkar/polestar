@@ -1,5 +1,3 @@
-import {DateTime} from './datetime';
-
 export interface LegendConfig {
   /**
    * The orientation of the legend. One of "left" or "right". This determines how the legend is positioned within the scene. The default is "right".
@@ -10,7 +8,7 @@ export interface LegendConfig {
    */
   offset?: number;
   /**
-   * The padding, in pixels, between the legend and axis.
+   * The padding, in pixels, between the lengend and axis.
    */
   padding?: number;
   /**
@@ -23,17 +21,14 @@ export interface LegendConfig {
   gradientStrokeColor?: string;
   /**
    * The width of the gradient stroke, in pixels.
-   * @mimimum 0
    */
   gradientStrokeWidth?: number;
   /**
    * The height of the gradient, in pixels.
-   * @mimimum 0
    */
   gradientHeight?: number;
   /**
    * The width of the gradient, in pixels.
-   * @mimimum 0
    */
   gradientWidth?: number;
   /**
@@ -49,17 +44,15 @@ export interface LegendConfig {
    */
   labelColor?: string;
   /**
-   * The font of the legend label.
+   * The font of the lengend label.
    */
   labelFont?: string;
   /**
-   * The font size of legend label.
-   * @mimimum 0
+   * The font size of lengend lable.
    */
   labelFontSize?: number;
   /**
    * The offset of the legend label.
-   * @mimimum 0
    */
   labelOffset?: number;
   /**
@@ -72,17 +65,15 @@ export interface LegendConfig {
   symbolColor?: string;
   /**
    * The shape of the legend symbol, can be the 'circle', 'square', 'cross', 'diamond',
-   * 'triangle-up', 'triangle-down', or else a custom SVG path string.
+   * 'triangle-up', 'triangle-down'.
    */
   symbolShape?: string;
   /**
-   * The size of the legend symbol, in pixels.
-   * @mimimum 0
+   * The size of the lengend symbol, in pixels.
    */
   symbolSize?: number;
   /**
    * The width of the symbol's stroke.
-   * @minimum 0
    */
   symbolStrokeWidth?: number;
   /**
@@ -125,9 +116,10 @@ export interface Legend extends LegendConfig {
   /**
    * Explicitly set the visible legend values.
    */
-  values?: number[] | string[] | DateTime[];
+  values?: Array<any>;
 }
 
 export const defaultLegendConfig: LegendConfig = {
   orient: undefined, // implicitly "right"
+  shortTimeLabels: false
 };

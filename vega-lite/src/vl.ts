@@ -5,7 +5,6 @@ export import channel = require('./channel');
 export const compile = require('./compile/compile').compile;
 export import config = require('./config');
 export import data = require('./data');
-export import datetime = require('./datetime');
 export import encoding = require('./encoding');
 export import facet = require('./facet');
 export import fieldDef = require('./fielddef');
@@ -22,4 +21,4 @@ export import type = require('./type');
 export import util = require('./util');
 export import validate = require('./validate');
 
-export const version: string = require('../package.json').version;
+export const version = '__VERSION__';

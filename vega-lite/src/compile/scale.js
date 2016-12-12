@@ -1,17 +1,15 @@
 "use strict";
 var aggregate_1 = require('../aggregate');
 var channel_1 = require('../channel');
-var config_1 = require('../config');
 var data_1 = require('../data');
-var datetime_1 = require('../datetime');
 var fielddef_1 = require('../fielddef');
 var mark_1 = require('../mark');
 var scale_1 = require('../scale');
-var sort_1 = require('../sort');
 var stack_1 = require('../stack');
+var timeunit_1 = require('../timeunit');
 var type_1 = require('../type');
 var util_1 = require('../util');
-var timeunit_1 = require('../timeunit');
+var time_1 = require('./time');
 exports.COLOR_LEGEND = 'color_legend';
 exports.COLOR_LEGEND_LABEL = 'color_legend_label';
 function parseScaleComponent(model) {
@@ -37,7 +35,7 @@ function parseMainScale(model, fieldDef, channel) {
     var scale = model.scale(channel);
     var sort = model.sort(channel);
     var scaleDef = {
-        name: model.scaleName(channel + '', true),
+        name: model.scaleName(channel),
         type: scale.type,
     };
     if (channel === channel_1.X && model.has(channel_1.X2)) {
@@ -60,17 +58,16 @@ function parseMainScale(model, fieldDef, channel) {
         scaleDef.domain = domain(scale, model, channel);
     }
     util_1.extend(scaleDef, rangeMixins(scale, model, channel));
-    if (sort && (sort_1.isSortField(sort) ? sort.order : sort) === sort_1.SortOrder.DESCENDING) {
+    if (sort && (typeof sort === 'string' ? sort : sort.order) === 'descending') {
         scaleDef.reverse = true;
     }
     [
         'round',
         'clamp', 'nice',
         'exponent', 'zero',
-        'points',
-        'padding'
+        'padding', 'points'
     ].forEach(function (property) {
-        var value = exports[property](scale, channel, fieldDef, model, scaleDef);
+        var value = exports[property](scale, channel, fieldDef, model);
         if (value !== undefined) {
             scaleDef[property] = value;
         }
@@ -79,11 +76,11 @@ function parseMainScale(model, fieldDef, channel) {
 }
 function parseColorLegendScale(model, fieldDef) {
     return {
-        name: model.scaleName(exports.COLOR_LEGEND, true),
+        name: model.scaleName(exports.COLOR_LEGEND),
         type: scale_1.ScaleType.ORDINAL,
         domain: {
             data: model.dataTable(),
-            field: model.field(channel_1.COLOR, (fieldDef.bin || fieldDef.timeUnit) ? {} : { prefix: 'rank' }),
+            field: model.field(channel_1.COLOR, (fieldDef.bin || fieldDef.timeUnit) ? {} : { prefn: 'rank_' }),
             sort: true
         },
         range: { data: model.dataTable(), field: model.field(channel_1.COLOR), sort: true }
@@ -91,7 +88,7 @@ function parseColorLegendScale(model, fieldDef) {
 }
 function parseBinColorLegendLabel(model, fieldDef) {
     return {
-        name: model.scaleName(exports.COLOR_LEGEND_LABEL, true),
+        name: model.scaleName(exports.COLOR_LEGEND_LABEL),
         type: scale_1.ScaleType.ORDINAL,
         domain: {
             data: model.dataTable(),
@@ -100,9 +97,9 @@ function parseBinColorLegendLabel(model, fieldDef) {
         },
         range: {
             data: model.dataTable(),
-            field: fielddef_1.field(fieldDef, { binSuffix: 'range' }),
+            field: fielddef_1.field(fieldDef, { binSuffix: '_range' }),
             sort: {
-                field: model.field(channel_1.COLOR, { binSuffix: 'start' }),
+                field: model.field(channel_1.COLOR, { binSuffix: '_start' }),
                 op: 'min'
             }
         }
@@ -113,9 +110,6 @@ function scaleType(scale, fieldDef, channel, mark) {
         return null;
     }
     if (util_1.contains([channel_1.ROW, channel_1.COLUMN, channel_1.SHAPE], channel)) {
-        if (scale && scale.type !== undefined && scale.type !== scale_1.ScaleType.ORDINAL) {
-            console.warn('Channel', channel, 'does not work with scale type =', scale.type);
-        }
         return scale_1.ScaleType.ORDINAL;
     }
     if (scale.type !== undefined) {
@@ -134,7 +128,15 @@ function scaleType(scale, fieldDef, channel, mark) {
                 return scale_1.ScaleType.TIME;
             }
             if (fieldDef.timeUnit) {
-                return timeunit_1.defaultScaleType(fieldDef.timeUnit);
+                switch (fieldDef.timeUnit) {
+                    case timeunit_1.TimeUnit.HOURS:
+                    case timeunit_1.TimeUnit.DAY:
+                    case timeunit_1.TimeUnit.MONTH:
+                    case timeunit_1.TimeUnit.QUARTER:
+                        return scale_1.ScaleType.ORDINAL;
+                    default:
+                        return scale_1.ScaleType.TIME;
+                }
             }
             return scale_1.ScaleType.TIME;
         case type_1.QUANTITATIVE:
@@ -146,43 +148,13 @@ function scaleType(scale, fieldDef, channel, mark) {
     return null;
 }
 exports.scaleType = scaleType;
-function scaleBandSize(scaleType, bandSize, scaleConfig, topLevelSize, mark, channel) {
-    if (scaleType === scale_1.ScaleType.ORDINAL) {
-        if (topLevelSize === undefined) {
-            if (bandSize) {
-                return bandSize;
-            }
-            else if (channel === channel_1.X && mark === mark_1.TEXT) {
-                return scaleConfig.textBandWidth;
-            }
-            else {
-                return scaleConfig.bandSize;
-            }
-        }
-        else {
-            if (bandSize) {
-                console.warn('bandSize for', channel, 'overridden as top-level', channel === channel_1.X ? 'width' : 'height', 'is provided.');
-            }
-            return scale_1.BANDSIZE_FIT;
-        }
-    }
-    else {
-        return undefined;
-    }
-}
-exports.scaleBandSize = scaleBandSize;
 function domain(scale, model, channel) {
     var fieldDef = model.fieldDef(channel);
     if (scale.domain) {
-        if (datetime_1.isDateTime(scale.domain[0])) {
-            return scale.domain.map(function (dt) {
-                return datetime_1.timestamp(dt, true);
-            });
-        }
         return scale.domain;
     }
     if (fieldDef.type === type_1.TEMPORAL) {
-        if (timeunit_1.imputedDomain(fieldDef.timeUnit, channel)) {
+        if (time_1.rawDomain(fieldDef.timeUnit, channel)) {
             return {
                 data: fieldDef.timeUnit,
                 field: 'date'
@@ -204,7 +176,7 @@ function domain(scale, model, channel) {
         }
         return {
             data: model.dataName(data_1.STACKED_SCALE),
-            field: model.field(channel, { prefix: 'sum' })
+            field: model.field(channel, { prefn: 'sum_' })
         };
     }
     var useRawDomain = _useRawDomain(scale, model, channel), sort = domainSort(model, channel, scale.type);
@@ -218,9 +190,9 @@ function domain(scale, model, channel) {
         if (scale.type === scale_1.ScaleType.ORDINAL) {
             return {
                 data: model.dataTable(),
-                field: model.field(channel, { binSuffix: 'range' }),
+                field: model.field(channel, { binSuffix: '_range' }),
                 sort: {
-                    field: model.field(channel, { binSuffix: 'start' }),
+                    field: model.field(channel, { binSuffix: '_start' }),
                     op: 'min'
                 }
             };
@@ -228,15 +200,15 @@ function domain(scale, model, channel) {
         else if (channel === channel_1.COLOR) {
             return {
                 data: model.dataTable(),
-                field: model.field(channel, { binSuffix: 'start' })
+                field: model.field(channel, { binSuffix: '_start' })
             };
         }
         else {
             return {
                 data: model.dataTable(),
                 field: [
-                    model.field(channel, { binSuffix: 'start' }),
-                    model.field(channel, { binSuffix: 'end' })
+                    model.field(channel, { binSuffix: '_start' }),
+                    model.field(channel, { binSuffix: '_end' })
                 ]
             };
         }
@@ -244,14 +216,14 @@ function domain(scale, model, channel) {
     else if (sort) {
         return {
             data: sort.op ? data_1.SOURCE : model.dataTable(),
-            field: (fieldDef.type === type_1.ORDINAL && channel === channel_1.COLOR) ? model.field(channel, { prefix: 'rank' }) : model.field(channel),
+            field: (fieldDef.type === type_1.ORDINAL && channel === channel_1.COLOR) ? model.field(channel, { prefn: 'rank_' }) : model.field(channel),
             sort: sort
         };
     }
     else {
         return {
             data: model.dataTable(),
-            field: (fieldDef.type === type_1.ORDINAL && channel === channel_1.COLOR) ? model.field(channel, { prefix: 'rank' }) : model.field(channel),
+            field: (fieldDef.type === type_1.ORDINAL && channel === channel_1.COLOR) ? model.field(channel, { prefn: 'rank_' }) : model.field(channel),
         };
     }
 }
@@ -261,14 +233,14 @@ function domainSort(model, channel, scaleType) {
         return undefined;
     }
     var sort = model.sort(channel);
-    if (sort_1.isSortField(sort)) {
+    if (util_1.contains(['ascending', 'descending', undefined], sort)) {
+        return true;
+    }
+    if (typeof sort !== 'string') {
         return {
             op: sort.op,
             field: sort.field
         };
-    }
-    if (util_1.contains([sort_1.SortOrder.ASCENDING, sort_1.SortOrder.DESCENDING, undefined], sort)) {
-        return true;
     }
     return undefined;
 }
@@ -278,13 +250,13 @@ function _useRawDomain(scale, model, channel) {
     return scale.useRawDomain &&
         fieldDef.aggregate &&
         aggregate_1.SHARED_DOMAIN_OPS.indexOf(fieldDef.aggregate) >= 0 &&
-        ((fieldDef.type === type_1.QUANTITATIVE && !fieldDef.bin && scale.type !== scale_1.ScaleType.LOG) ||
+        ((fieldDef.type === type_1.QUANTITATIVE && !fieldDef.bin) ||
             (fieldDef.type === type_1.TEMPORAL && util_1.contains([scale_1.ScaleType.TIME, scale_1.ScaleType.UTC], scale.type)));
 }
 function rangeMixins(scale, model, channel) {
     var fieldDef = model.fieldDef(channel);
     var scaleConfig = model.config().scale;
-    if (scale.type === scale_1.ScaleType.ORDINAL && scale.bandSize && scale.bandSize !== scale_1.BANDSIZE_FIT && util_1.contains([channel_1.X, channel_1.Y], channel)) {
+    if (scale.type === scale_1.ScaleType.ORDINAL && scale.bandSize && util_1.contains([channel_1.X, channel_1.Y], channel)) {
         return { bandSize: scale.bandSize };
     }
     if (scale.range && !util_1.contains([channel_1.X, channel_1.Y, channel_1.ROW, channel_1.COLUMN], channel)) {
@@ -301,11 +273,11 @@ function rangeMixins(scale, model, channel) {
         case channel_1.X:
             return {
                 rangeMin: 0,
-                rangeMax: unitModel.width
+                rangeMax: unitModel.config().cell.width
             };
         case channel_1.Y:
             return {
-                rangeMin: unitModel.height,
+                rangeMin: unitModel.config().cell.height,
                 rangeMax: 0
             };
         case channel_1.SIZE:
@@ -313,7 +285,7 @@ function rangeMixins(scale, model, channel) {
                 if (scaleConfig.barSizeRange !== undefined) {
                     return { range: scaleConfig.barSizeRange };
                 }
-                var dimension = model.config().mark.orient === config_1.Orient.HORIZONTAL ? channel_1.Y : channel_1.X;
+                var dimension = model.config().mark.orient === 'horizontal' ? channel_1.Y : channel_1.X;
                 return { range: [model.config().mark.barThinSize, model.scale(dimension).bandSize] };
             }
             else if (unitModel.mark() === mark_1.TEXT) {
@@ -384,23 +356,23 @@ function nice(scale, channel, fieldDef) {
             return scale.nice;
         }
         if (util_1.contains([scale_1.ScaleType.TIME, scale_1.ScaleType.UTC], scale.type)) {
-            return timeunit_1.smallestUnit(fieldDef.timeUnit);
+            return time_1.smallestUnit(fieldDef.timeUnit);
         }
         return util_1.contains([channel_1.X, channel_1.Y], channel);
     }
     return undefined;
 }
 exports.nice = nice;
-function padding(scale, channel, __, ___, scaleDef) {
+function padding(scale, channel) {
     if (scale.type === scale_1.ScaleType.ORDINAL && util_1.contains([channel_1.X, channel_1.Y], channel)) {
-        return scaleDef.points ? 1 : scale.padding;
+        return scale.padding;
     }
     return undefined;
 }
 exports.padding = padding;
 function points(scale, channel, __, model) {
     if (scale.type === scale_1.ScaleType.ORDINAL && util_1.contains([channel_1.X, channel_1.Y], channel)) {
-        return model.mark() === mark_1.BAR && scale.bandSize === scale_1.BANDSIZE_FIT ? undefined : true;
+        return true;
     }
     return undefined;
 }
@@ -417,7 +389,7 @@ function zero(scale, channel, fieldDef) {
         if (scale.zero !== undefined) {
             return scale.zero;
         }
-        return !scale.domain && !fieldDef.bin && util_1.contains([channel_1.X, channel_1.Y], channel);
+        return !fieldDef.bin && util_1.contains([channel_1.X, channel_1.Y], channel);
     }
     return undefined;
 }

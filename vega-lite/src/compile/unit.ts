@@ -8,7 +8,7 @@ import * as vlEncoding from '../encoding'; // TODO: remove
 import {FieldDef, FieldRefOption, field} from '../fielddef';
 import {Legend} from '../legend';
 import {Mark, TEXT as TEXTMARK} from '../mark';
-import {BANDSIZE_FIT, Scale, ScaleConfig, ScaleType} from '../scale';
+import {Scale, ScaleType} from '../scale';
 import {ExtendedUnitSpec} from '../spec';
 import {getFullName, QUANTITATIVE} from '../type';
 import {duplicate, extend, mergeDeep, Dict} from '../util';
@@ -22,26 +22,13 @@ import {parseLegendComponent} from './legend';
 import {assembleLayout, parseUnitLayout} from './layout';
 import {Model} from './model';
 import {parseMark} from './mark/mark';
-import {parseScaleComponent, scaleBandSize, scaleType} from './scale';
+import {parseScaleComponent, scaleType} from './scale';
 import {stack, StackProperties} from '../stack';
 
 /**
  * Internal model of Vega-Lite specification for the compiler.
  */
 export class UnitModel extends Model {
-  /**
-   * Fixed width for the unit visualization.
-   * If undefined (e.g., for ordinal scale), the width of the
-   * visualization will be calculated dynamically.
-   */
-  private _width: number;
-
-  /**
-   * Fixed height for the unit visualization.
-   * If undefined (e.g., for ordinal scale), the height of the
-   * visualization will be calculated dynamically.
-   */
-  private _height: number;
 
   private _mark: Mark;
   private _encoding: Encoding;
@@ -50,31 +37,16 @@ export class UnitModel extends Model {
   constructor(spec: ExtendedUnitSpec, parent: Model, parentGivenName: string) {
     super(spec, parent, parentGivenName);
 
-    // use top-level width / height or parent's top-level width / height
-    const providedWidth = spec.width !== undefined ? spec.width :
-      parent ? parent['width'] : undefined; // only exists if parent is layer
-    const providedHeight = spec.height !== undefined ? spec.height :
-      parent ? parent['height'] : undefined; // only exists if parent is layer
-
     const mark = this._mark = spec.mark;
     const encoding = this._encoding = this._initEncoding(mark, spec.encoding || {});
+    const config = this._config = this._initConfig(spec.config, parent, mark, encoding);
 
-    this._stack = stack(mark, encoding, ((spec.config || {}).mark || {}).stacked);
-    const config = this._config = this._initConfig(spec.config, parent, mark, encoding, this._stack);
-
-    this._scale =  this._initScale(mark, encoding, config, providedWidth, providedHeight);
+    this._scale =  this._initScale(mark, encoding, config);
     this._axis = this._initAxis(encoding, config);
     this._legend = this._initLegend(encoding, config);
 
-    // width / height
-    this._initSize(mark, this._scale,
-      providedWidth,
-      providedHeight,
-      config.cell, config.scale
-    );
-
     // calculate stack properties
-
+    this._stack = stack(mark, encoding, config);
   }
 
   private _initEncoding(mark: Mark, encoding: Encoding) {
@@ -103,26 +75,13 @@ export class UnitModel extends Model {
     return encoding;
   }
 
-  private _initConfig(specConfig: Config, parent: Model, mark: Mark, encoding: Encoding, stack: StackProperties) {
+  private _initConfig(specConfig: Config, parent: Model, mark: Mark, encoding: Encoding) {
     let config = mergeDeep(duplicate(defaultConfig), parent ? parent.config() : {}, specConfig);
-    let hasFacetParent = false;
-    while (parent !== null) {
-      if (parent.isFacet()) {
-        hasFacetParent = true;
-        break;
-      }
-      parent = parent.parent();
-    }
-
-    if (hasFacetParent) {
-      config.cell = extend({}, config.cell, config.facet.cell);
-    }
-
-    config.mark = initMarkConfig(mark, encoding, stack, config);
+    config.mark = initMarkConfig(mark, encoding, config);
     return config;
   }
 
-  private _initScale(mark: Mark, encoding: Encoding, config: Config, topLevelWidth:number, topLevelHeight: number): Dict<Scale> {
+  private _initScale(mark: Mark, encoding: Encoding, config: Config): Dict<Scale> {
     return UNIT_SCALE_CHANNELS.reduce(function(_scale, channel) {
       if (vlEncoding.has(encoding, channel) ||
           (channel === X && vlEncoding.has(encoding, X2)) ||
@@ -133,46 +92,17 @@ export class UnitModel extends Model {
         const scaleSpec = (channelDef || {}).scale || {};
         const _scaleType = scaleType(scaleSpec, channelDef, channel, mark);
 
-        var scale = _scale[channel] = extend({
+        _scale[channel] = extend({
           type: _scaleType,
           round: config.scale.round,
           padding: config.scale.padding,
-          useRawDomain: config.scale.useRawDomain
+          useRawDomain: config.scale.useRawDomain,
+          bandSize: channel === X && _scaleType === ScaleType.ORDINAL && mark === TEXTMARK ?
+                     config.scale.textBandWidth : config.scale.bandSize
         }, scaleSpec);
-
-        // bandSize depends on top-level size (width/height) and scale type
-        // If top-level size is specified, we override specified bandSize with "fit".
-        scale.bandSize = scaleBandSize(scale.type, scale.bandSize, config.scale, channel === X ? topLevelWidth : topLevelHeight, mark, channel);
       }
       return _scale;
     }, {} as Dict<Scale>);
-  }
-
-  private _initSize(mark: Mark, scale: Dict<Scale>, width: number, height: number, cellConfig: CellConfig, scaleConfig: ScaleConfig) {
-    if (width !== undefined) {
-      this._width = width;
-    } else if (scale[X]) {
-      if (scale[X].type !== ScaleType.ORDINAL || scale[X].bandSize === BANDSIZE_FIT) {
-        this._width = cellConfig.width;
-      } // else: Do nothing, use dynamic width.
-    } else { // No scale X
-      if (mark === TEXTMARK) {
-        // for text table without x/y scale we need wider bandSize
-        this._width = scaleConfig.textBandWidth;
-      } else {
-        this._width = scaleConfig.bandSize;
-      }
-    }
-
-    if (height !== undefined) {
-      this._height = height;
-    } else if (scale[Y]) {
-      if (scale[Y].type !== ScaleType.ORDINAL || scale[Y].bandSize === BANDSIZE_FIT) {
-        this._height = cellConfig.height;
-      } // else: Do nothing, use dynamic height .
-    } else {
-      this._height = scaleConfig.bandSize;
-    }
   }
 
   private _initAxis(encoding: Encoding, config: Config): Dict<Axis> {
@@ -183,9 +113,7 @@ export class UnitModel extends Model {
           (channel === Y && vlEncoding.has(encoding, Y2))) {
 
         const axisSpec = (encoding[channel] || {}).axis;
-
-        // We no longer support false in the schema, but we keep false here for backward compatability.
-        if (axisSpec !== null && axisSpec !== false) {
+        if (axisSpec !== false) {
           _axis[channel] = extend({},
             config.axis,
             axisSpec === true ? {} : axisSpec ||  {}
@@ -200,8 +128,7 @@ export class UnitModel extends Model {
     return NONSPATIAL_SCALE_CHANNELS.reduce(function(_legend, channel) {
       if (vlEncoding.has(encoding, channel)) {
         const legendSpec = encoding[channel].legend;
-        // We no longer support false in the schema, but we keep false here for backward compatability.
-        if (legendSpec !== null && legendSpec !== false) {
+        if (legendSpec !== false) {
           _legend[channel] = extend({}, config.legend,
             legendSpec === true ? {} : legendSpec ||  {}
           );
@@ -209,14 +136,6 @@ export class UnitModel extends Model {
       }
       return _legend;
     }, {} as Dict<Legend>);
-  }
-
-  public get width(): number {
-    return this._width;
-  }
-
-  public get height(): number {
-    return this._height;
   }
 
   public parseData() {
@@ -329,7 +248,7 @@ export class UnitModel extends Model {
 
     if (fieldDef.bin) { // bin has default suffix that depends on scaleType
       opt = extend({
-        binSuffix: this.scale(channel).type === ScaleType.ORDINAL ? 'range' : 'start'
+        binSuffix: this.scale(channel).type === ScaleType.ORDINAL ? '_range' : '_start'
       }, opt);
     }
 

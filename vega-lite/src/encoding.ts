@@ -22,12 +22,12 @@ export interface UnitEncoding {
   /**
    * X2 coordinates for ranged `bar`, `rule`, `area`
    */
-  x2?: FieldDef;
+  x2?: PositionChannelDef;
 
   /**
    * Y2 coordinates for ranged `bar`, `rule`, `area`
    */
-  y2?: FieldDef;
+  y2?: PositionChannelDef;
 
   /**
    * Color of the marks – either fill or stroke color based on mark type.
@@ -53,7 +53,7 @@ export interface UnitEncoding {
   /**
    * The symbol's shape (only for `point` marks). The supported values are
    * `"circle"` (default), `"square"`, `"cross"`, `"diamond"`, `"triangle-up"`,
-   * or `"triangle-down"`, or else a custom SVG path string.
+   * or `"triangle-down"`.
    */
   shape?: ChannelDefWithLegend; // TODO: maybe distinguish ordinal-only
 

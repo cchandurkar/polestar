@@ -3,9 +3,9 @@ import {ORDINAL} from '../../type';
 import {extend, vals, flatten, Dict} from '../../util';
 import {VgTransform} from '../../vega.schema';
 
-import {FacetModel} from '../facet';
-import {LayerModel} from '../layer';
-import {UnitModel} from '../unit';
+import {FacetModel} from './../facet';
+import {LayerModel} from './../layer';
+import {Model} from './../model';
 
 import {DataComponent} from './data';
 
@@ -18,9 +18,9 @@ export namespace colorRank {
   /**
    * Return hash dict from a color field's name to the sort and rank transforms
    */
-  export function parseUnit(model: UnitModel) {
+  export function parseUnit(model: Model) {
     let colorRankComponent: Dict<VgTransform[]> = {};
-    if (model.has(COLOR) && model.encoding().color.type === ORDINAL) {
+    if (model.has(COLOR) && model.fieldDef(COLOR).type === ORDINAL) {
       colorRankComponent[model.field(COLOR)] = [{
         type: 'sort',
         by: model.field(COLOR)
@@ -28,7 +28,7 @@ export namespace colorRank {
         type: 'rank',
         field: model.field(COLOR),
         output: {
-          rank: model.field(COLOR, { prefix: 'rank' })
+          rank: model.field(COLOR, { prefn: 'rank_' })
         }
       }];
     }

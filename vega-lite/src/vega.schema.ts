@@ -10,11 +10,11 @@ export interface VgData {
   transform?: any;
 }
 
-export type VgParentRef = {
+type VgParentRef = {
   parent: string
 };
 
-export type VgFieldRef = string | VgParentRef | VgParentRef[];
+type VgFieldRef = string | VgParentRef | VgParentRef[];
 
 export type VgDataRef = {
   data: string,

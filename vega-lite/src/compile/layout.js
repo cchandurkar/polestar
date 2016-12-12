@@ -3,7 +3,8 @@ var channel_1 = require('../channel');
 var data_1 = require('../data');
 var scale_1 = require('../scale');
 var util_1 = require('../util');
-var timeunit_1 = require('../timeunit');
+var mark_1 = require('../mark');
+var time_1 = require('./time');
 function assembleLayout(model, layoutData) {
     var layoutComponent = model.component.layout;
     if (!layoutComponent.width && !layoutComponent.height) {
@@ -42,26 +43,35 @@ function parseUnitLayout(model) {
 }
 exports.parseUnitLayout = parseUnitLayout;
 function parseUnitSizeLayout(model, channel) {
+    var cellConfig = model.config().cell;
+    var nonOrdinalSize = channel === channel_1.X ? cellConfig.width : cellConfig.height;
     return {
         distinct: getDistinct(model, channel),
         formula: [{
                 field: model.channelSizeName(channel),
-                expr: unitSizeExpr(model, channel)
+                expr: unitSizeExpr(model, channel, nonOrdinalSize)
             }]
     };
 }
-function unitSizeExpr(model, channel) {
-    var scale = model.scale(channel);
-    if (scale) {
-        if (scale.type === scale_1.ScaleType.ORDINAL && scale.bandSize !== scale_1.BANDSIZE_FIT) {
-            return '(' + cardinalityExpr(model, channel) +
-                ' + ' + 1 +
+function unitSizeExpr(model, channel, nonOrdinalSize) {
+    if (model.scale(channel)) {
+        if (model.isOrdinalScale(channel)) {
+            var scale = model.scale(channel);
+            return '(' + cardinalityFormula(model, channel) +
+                ' + ' + scale.padding +
                 ') * ' + scale.bandSize;
         }
+        else {
+            return nonOrdinalSize + '';
+        }
     }
-    return (channel === channel_1.X ? model.width : model.height) + '';
+    else {
+        if (model.mark() === mark_1.TEXT && channel === channel_1.X) {
+            return model.config().scale.textBandWidth + '';
+        }
+        return model.config().scale.bandSize + '';
+    }
 }
-exports.unitSizeExpr = unitSizeExpr;
 function parseFacetLayout(model) {
     return {
         width: parseFacetSizeLayout(model, channel_1.COLUMN),
@@ -89,10 +99,10 @@ function parseFacetSizeLayout(model, channel) {
 function facetSizeFormula(model, channel, innerSize) {
     var scale = model.scale(channel);
     if (model.has(channel)) {
-        return '(datum["' + innerSize + '"] + ' + scale.padding + ')' + ' * ' + cardinalityExpr(model, channel);
+        return '(datum.' + innerSize + ' + ' + scale.padding + ')' + ' * ' + cardinalityFormula(model, channel);
     }
     else {
-        return 'datum["' + innerSize + '"] + ' + model.config().facet.scale.padding;
+        return 'datum.' + innerSize + ' + ' + model.config().facet.scale.padding;
     }
 }
 function parseLayerLayout(model) {
@@ -133,15 +143,14 @@ function getDistinct(model, channel) {
     }
     return {};
 }
-function cardinalityExpr(model, channel) {
+function cardinalityFormula(model, channel) {
     var scale = model.scale(channel);
     if (scale.domain instanceof Array) {
         return scale.domain.length;
     }
     var timeUnit = model.fieldDef(channel).timeUnit;
-    var timeUnitDomain = timeUnit ? timeunit_1.imputedDomain(timeUnit, channel) : null;
+    var timeUnitDomain = timeUnit ? time_1.rawDomain(timeUnit, channel) : null;
     return timeUnitDomain !== null ? timeUnitDomain.length :
-        model.field(channel, { datum: true, prefix: 'distinct' });
+        model.field(channel, { datum: true, prefn: 'distinct_' });
 }
-exports.cardinalityExpr = cardinalityExpr;
 //# sourceMappingURL=layout.js.map

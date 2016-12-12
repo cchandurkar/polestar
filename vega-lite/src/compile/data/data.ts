@@ -1,4 +1,3 @@
-import {FieldDef} from '../../fielddef';
 import {Formula} from '../../transform';
 import {keys, Dict, StringSet} from '../../util';
 import {VgData, VgTransform} from '../../vega.schema';
@@ -32,7 +31,7 @@ export interface DataComponent {
   formatParse: Dict<string>;
 
   /** String set of fields for null filtering */
-  nullFilter: Dict<FieldDef>;
+  nullFilter: Dict<boolean>;
 
   /** Hashset of a formula object */
   calculate: Dict<Formula>;

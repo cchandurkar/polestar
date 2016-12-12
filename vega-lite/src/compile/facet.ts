@@ -37,7 +37,7 @@ export class FacetModel extends Model {
   }
 
   private _initConfig(specConfig: Config, parent: Model) {
-    return mergeDeep(duplicate(defaultConfig), parent ? parent.config() : {}, specConfig);
+    return mergeDeep(duplicate(defaultConfig), specConfig, parent ? parent.config() : {});
   }
 
   private _initFacet(facet: Facet) {
@@ -48,13 +48,14 @@ export class FacetModel extends Model {
 
     channelMappingForEach(this.channels(), facet, function(fieldDef: FieldDef, channel: Channel) {
       // TODO: if has no field / datum, then drop the field
-      if (fieldDef.type) {
-        // convert short type to full type
-        fieldDef.type = getFullName(fieldDef.type);
-      }
 
       if (!isDimension(fieldDef)) {
         model.addWarning(channel + ' encoding should be ordinal.');
+      }
+
+      if (fieldDef.type) {
+        // convert short type to full type
+        fieldDef.type = getFullName(fieldDef.type);
       }
     });
     return facet;
@@ -172,7 +173,7 @@ export class FacetModel extends Model {
         // for each scale, need to rename
         vals(scaleComponent[channel]).forEach(function(scale) {
           const scaleNameWithoutPrefix = scale.name.substr(child.name('').length);
-          const newName = model.scaleName(scaleNameWithoutPrefix, true);
+          const newName = model.scaleName(scaleNameWithoutPrefix);
           child.renameScale(scale.name, newName);
           scale.name = newName;
         });

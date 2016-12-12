@@ -1,7 +1,6 @@
 "use strict";
 var axis_1 = require('../axis');
 var channel_1 = require('../channel');
-var datetime_1 = require('../datetime');
 var fielddef_1 = require('../fielddef');
 var type_1 = require('../type');
 var util_1 = require('../util');
@@ -62,8 +61,8 @@ function parseAxis(channel, model) {
         scale: model.scaleName(channel)
     };
     [
-        'format', 'grid', 'layer', 'offset', 'orient', 'tickSize', 'ticks', 'tickSizeEnd', 'title', 'titleOffset', 'values',
-        'tickPadding', 'tickSize', 'tickSizeMajor', 'tickSizeMinor', 'subdivide'
+        'format', 'grid', 'layer', 'offset', 'orient', 'tickSize', 'ticks', 'tickSizeEnd', 'title', 'titleOffset',
+        'tickPadding', 'tickSize', 'tickSizeMajor', 'tickSizeMinor', 'values', 'subdivide'
     ].forEach(function (property) {
         var method;
         var value = (method = exports[property]) ?
@@ -90,7 +89,7 @@ function parseAxis(channel, model) {
 }
 exports.parseAxis = parseAxis;
 function format(model, channel) {
-    return common_1.numberFormat(model.fieldDef(channel), model.axis(channel).format, model.config(), channel);
+    return common_1.numberFormat(model.fieldDef(channel), model.axis(channel).format, model.config());
 }
 exports.format = format;
 function offset(model, channel) {
@@ -174,11 +173,11 @@ function title(model, channel) {
     }
     else if (channel === channel_1.X && !model.isOrdinalScale(channel_1.X)) {
         var unitModel = model;
-        maxLength = unitModel.width / model.axis(channel_1.X).characterWidth;
+        maxLength = unitModel.config().cell.width / model.axis(channel_1.X).characterWidth;
     }
     else if (channel === channel_1.Y && !model.isOrdinalScale(channel_1.Y)) {
         var unitModel = model;
-        maxLength = unitModel.height / model.axis(channel_1.Y).characterWidth;
+        maxLength = unitModel.config().cell.height / model.axis(channel_1.Y).characterWidth;
     }
     return maxLength ? util_1.truncate(fieldTitle, maxLength) : fieldTitle;
 }
@@ -191,16 +190,6 @@ function titleOffset(model, channel) {
     return undefined;
 }
 exports.titleOffset = titleOffset;
-function values(model, channel) {
-    var vals = model.axis(channel).values;
-    if (vals && datetime_1.isDateTime(vals[0])) {
-        return vals.map(function (dt) {
-            return datetime_1.timestamp(dt, true);
-        });
-    }
-    return vals;
-}
-exports.values = values;
 var properties;
 (function (properties) {
     function axis(model, channel, axisPropsSpec) {
@@ -229,14 +218,14 @@ var properties;
         if (util_1.contains([type_1.NOMINAL, type_1.ORDINAL], fieldDef.type) && axis.labelMaxLength) {
             labelsSpec = util_1.extend({
                 text: {
-                    template: '{{ datum["data"] | truncate:' + axis.labelMaxLength + ' }}'
+                    template: '{{ datum.data | truncate:' + axis.labelMaxLength + ' }}'
                 }
             }, labelsSpec || {});
         }
         else if (fieldDef.type === type_1.TEMPORAL) {
             labelsSpec = util_1.extend({
                 text: {
-                    template: common_1.timeTemplate('datum["data"]', fieldDef.timeUnit, axis.format, axis.shortTimeLabels, config)
+                    template: common_1.timeTemplate('datum.data', fieldDef.timeUnit, axis.format, axis.shortTimeLabels, config)
                 }
             }, labelsSpec);
         }
@@ -244,7 +233,7 @@ var properties;
             labelsSpec.angle = { value: axis.labelAngle };
         }
         else {
-            if (channel === channel_1.X && (util_1.contains([type_1.NOMINAL, type_1.ORDINAL], fieldDef.type) || !!fieldDef.bin || fieldDef.type === type_1.TEMPORAL)) {
+            if (channel === channel_1.X && (fielddef_1.isDimension(fieldDef) || fieldDef.type === type_1.TEMPORAL)) {
                 labelsSpec.angle = { value: 270 };
             }
         }
@@ -279,7 +268,7 @@ var properties;
             }
         }
         if (axis.tickLabelColor !== undefined) {
-            labelsSpec.fill = { value: axis.tickLabelColor };
+            labelsSpec.stroke = { value: axis.tickLabelColor };
         }
         if (axis.tickLabelFont !== undefined) {
             labelsSpec.font = { value: axis.tickLabelFont };
@@ -297,7 +286,7 @@ var properties;
     properties.ticks = ticks;
     function title(model, channel, titlePropsSpec) {
         var axis = model.axis(channel);
-        return util_1.extend(axis.titleColor !== undefined ? { fill: { value: axis.titleColor } } : {}, axis.titleFont !== undefined ? { font: { value: axis.titleFont } } : {}, axis.titleFontSize !== undefined ? { fontSize: { value: axis.titleFontSize } } : {}, axis.titleFontWeight !== undefined ? { fontWeight: { value: axis.titleFontWeight } } : {}, titlePropsSpec || {});
+        return util_1.extend(axis.titleColor !== undefined ? { stroke: { value: axis.titleColor } } : {}, axis.titleFont !== undefined ? { font: { value: axis.titleFont } } : {}, axis.titleFontSize !== undefined ? { fontSize: { value: axis.titleFontSize } } : {}, axis.titleFontWeight !== undefined ? { fontWeight: { value: axis.titleFontWeight } } : {}, titlePropsSpec || {});
     }
     properties.title = title;
 })(properties = exports.properties || (exports.properties = {}));

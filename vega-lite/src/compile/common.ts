@@ -1,23 +1,21 @@
-import {BAR, POINT, CIRCLE, SQUARE} from '../mark';
-import {AggregateOp} from '../aggregate';
-import {COLOR, OPACITY, TEXT, Channel} from '../channel';
+import {COLOR, OPACITY} from '../channel';
 import {Config} from '../config';
 import {FieldDef, field, OrderChannelDef} from '../fielddef';
 import {SortOrder} from '../sort';
 import {TimeUnit} from '../timeunit';
 import {QUANTITATIVE, ORDINAL} from '../type';
-import {contains, union} from '../util';
+import { union} from '../util';
 
 import {FacetModel} from './facet';
 import {LayerModel} from './layer';
 import {Model} from './model';
 import {template as timeUnitTemplate} from '../timeunit';
 import {UnitModel} from './unit';
-import {Spec, isUnitSpec, isSomeFacetSpec, isLayerSpec} from '../spec';
+import {Spec, isUnitSpec, isFacetSpec, isLayerSpec} from '../spec';
 
 
 export function buildModel(spec: Spec, parent: Model, parentGivenName: string): Model {
-  if (isSomeFacetSpec(spec)) {
+  if (isFacetSpec(spec)) {
     return new FacetModel(spec, parent, parentGivenName);
   }
 
@@ -44,8 +42,8 @@ export const FILL_STROKE_CONFIG = union(STROKE_CONFIG, FILL_CONFIG);
 
 export function applyColorAndOpacity(p, model: UnitModel) {
   const filled = model.config().mark.filled;
-  const colorFieldDef = model.encoding().color;
-  const opacityFieldDef = model.encoding().opacity;
+  const colorFieldDef = model.fieldDef(COLOR);
+  const opacityFieldDef = model.fieldDef(OPACITY);
 
   // Apply fill stroke config first so that color field / value can override
   // fill / stroke
@@ -60,7 +58,7 @@ export function applyColorAndOpacity(p, model: UnitModel) {
   if (model.has(COLOR)) {
     colorValue = {
       scale: model.scaleName(COLOR),
-      field: model.field(COLOR, colorFieldDef.type === ORDINAL ? {prefix: 'rank'} : {})
+      field: model.field(COLOR, colorFieldDef.type === ORDINAL ? {prefn: 'rank_'} : {})
     };
   } else if (colorFieldDef && colorFieldDef.value) {
     colorValue = { value: colorFieldDef.value };
@@ -69,7 +67,7 @@ export function applyColorAndOpacity(p, model: UnitModel) {
   if (model.has(OPACITY)) {
     opacityValue = {
       scale: model.scaleName(OPACITY),
-      field: model.field(OPACITY, opacityFieldDef.type === ORDINAL ? {prefix: 'rank'} : {})
+      field: model.field(OPACITY, opacityFieldDef.type === ORDINAL ? {prefn: 'rank_'} : {})
     };
   } else if (opacityFieldDef && opacityFieldDef.value) {
     opacityValue = { value: opacityFieldDef.value };
@@ -85,12 +83,6 @@ export function applyColorAndOpacity(p, model: UnitModel) {
     // apply color config if there is no fill / stroke config
     p[filled ? 'fill' : 'stroke'] = p[filled ? 'fill' : 'stroke'] ||
       {value: model.config().mark.color};
-  }
-
-  // If there is no fill, always fill symbols
-  // with transparent fills https://github.com/vega/vega-lite/issues/1316
-  if (!p.fill && contains([BAR, POINT, CIRCLE, SQUARE], model.mark())) {
-    p.fill = {value: 'transparent'};
   }
 
   if (opacityValue !== undefined) {
@@ -117,18 +109,11 @@ export function applyMarkConfig(marksProperties, model: UnitModel, propsList: st
  *
  * @param format explicitly specified format
  */
-export function numberFormat(fieldDef: FieldDef, format: string, config: Config, channel: Channel) {
+export function numberFormat(fieldDef: FieldDef, format: string, config: Config) {
   if (fieldDef.type === QUANTITATIVE && !fieldDef.bin) {
     // add number format for quantitative type only
-
-    if (format) {
-      return format;
-    } else if (fieldDef.aggregate === AggregateOp.COUNT && channel === TEXT) {
-      // FIXME: need a more holistic way to deal with this.
-      return 'd';
-    }
     // TODO: need to make this work correctly for numeric ordinal / nominal type
-    return config.numberFormat;
+    return format || config.numberFormat;
   }
   return undefined;
 }
@@ -136,7 +121,7 @@ export function numberFormat(fieldDef: FieldDef, format: string, config: Config,
 /** Return field reference with potential "-" prefix for descending sort */
 export function sortField(orderChannelDef: OrderChannelDef) {
   return (orderChannelDef.sort === SortOrder.DESCENDING ? '-' : '') +
-    field(orderChannelDef, {binSuffix: 'mid'});
+    field(orderChannelDef, {binSuffix: '_mid'});
 }
 
 /**

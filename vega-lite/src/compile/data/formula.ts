@@ -10,13 +10,13 @@ import {DataComponent} from './data';
 
 export namespace formula {
   function parse(model: Model): Dict<Formula> {
-    return (model.calculate() || []).reduce(function(formulaComponent, formula) {
+    return (model.transform().calculate || []).reduce(function(formulaComponent, formula) {
       formulaComponent[hash(formula)] = formula;
       return formulaComponent;
     }, {} as Dict<Formula>);
   }
 
-  export const parseUnit: (model: Model) => Dict<Formula> = parse;
+  export const parseUnit = parse;
 
   export function parseFacet(model: FacetModel) {
     let formulaComponent = parse(model);

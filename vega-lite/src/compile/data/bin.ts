@@ -11,10 +11,6 @@ import {Model} from './../model';
 import {DataComponent} from './data';
 
 export namespace bin {
-  function numberFormatExpr(format, expr) {
-    return `format('${format}', ${expr})`;
-  }
-
   function parse(model: Model): Dict<VgTransform[]> {
     return model.reduce(function(binComponent, fieldDef: FieldDef, channel: Channel) {
       const bin = model.fieldDef(channel).bin;
@@ -23,9 +19,9 @@ export namespace bin {
           type: 'bin',
           field: fieldDef.field,
           output: {
-            start: field(fieldDef, { binSuffix: 'start' }),
-            mid: field(fieldDef, { binSuffix: 'mid' }),
-            end: field(fieldDef, { binSuffix: 'end' })
+            start: field(fieldDef, { binSuffix: '_start' }),
+            mid: field(fieldDef, { binSuffix: '_mid' }),
+            end: field(fieldDef, { binSuffix: '_end' })
           }
         },
           // if bin is an object, load parameter here!
@@ -39,22 +35,14 @@ export namespace bin {
 
         const transform = [binTrans];
         const isOrdinalColor = model.isOrdinalScale(channel) || channel === COLOR;
-        // color ramp has type linear or time, we have to create new bin_range field
-        // with correct number format
+        // color ramp has type linear or time
         if (isOrdinalColor) {
-          // read format from axis or legend, if there is not format there then use config.numberFormat
-          const format = (model.axis(channel) || model.legend(channel) || {}).format ||
-            model.config().numberFormat;
-
-          const startField = field(fieldDef, { datum: true, binSuffix: 'start' });
-          const endField = field(fieldDef, { datum: true, binSuffix: 'end' });
-
           transform.push({
             type: 'formula',
-            field: field(fieldDef, { binSuffix: 'range' }),
-            expr: numberFormatExpr(format, startField) +
-              ' + \'-\' + ' +
-              numberFormatExpr(format, endField)
+            field: field(fieldDef, { binSuffix: '_range' }),
+            expr: field(fieldDef, { datum: true, binSuffix: '_start' }) +
+            ' + \'-\' + ' +
+            field(fieldDef, { datum: true, binSuffix: '_end' })
           });
         }
         // FIXME: current merging logic can produce redundant transforms when a field is binned for color and for non-color
@@ -65,7 +53,7 @@ export namespace bin {
     }, {});
   }
 
-  export const parseUnit: (model: Model) => Dict<VgTransform[]> = parse;
+  export const parseUnit = parse;
 
   export function parseFacet(model: FacetModel) {
     let binComponent = parse(model);

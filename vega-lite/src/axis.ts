@@ -1,4 +1,3 @@
-import {DateTime} from './datetime';
 
 export enum AxisOrient {
     TOP = 'top' as any,
@@ -206,8 +205,6 @@ export const defaultFacetAxisConfig: AxisConfig = {
 export interface Axis extends AxisConfig {
   /**
    * The rotation angle of the axis labels.
-   * @minimum 0
-   * @maximum 360
    */
   labelAngle?: number;
   /**
@@ -222,5 +219,5 @@ export interface Axis extends AxisConfig {
    * A title for the axis. Shows field name and its function by default.
    */
   title?: string;
-  values?: number[] | DateTime[];
+  values?: number[];
 }

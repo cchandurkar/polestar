@@ -1,8 +1,7 @@
-import {SUM_OPS} from './aggregate';
 import {Channel, STACK_GROUP_CHANNELS, X, Y} from './channel';
+import {Config} from './config';
 import {Encoding, has, isAggregate} from './encoding';
-import {Mark, BAR, AREA, POINT, CIRCLE, SQUARE, LINE, TEXT, TICK} from './mark';
-import {ScaleType} from './scale';
+import {Mark, BAR, AREA} from './mark';
 import {contains} from './util';
 
 export enum StackOffset {
@@ -26,14 +25,16 @@ export interface StackProperties {
   offset: StackOffset;
 }
 
-export function stack(mark: Mark, encoding: Encoding, stacked: StackOffset): StackProperties {
+export function stack(mark: Mark, encoding: Encoding, config: Config): StackProperties {
+  const stacked = (config && config.mark) ? config.mark.stacked : undefined;
+
   // Should not have stack explicitly disabled
   if (contains([StackOffset.NONE, null, false], stacked)) {
     return null;
   }
 
   // Should have stackable mark
-  if (!contains([BAR, AREA, POINT, CIRCLE, SQUARE, LINE, TEXT, TICK], mark)) {
+  if (!contains([BAR, AREA], mark)) {
     return null;
   }
 
@@ -61,34 +62,11 @@ export function stack(mark: Mark, encoding: Encoding, stacked: StackOffset): Sta
   const yIsAggregate = hasYField && !!encoding.y.aggregate;
 
   if (xIsAggregate !== yIsAggregate) {
-    const fieldChannel = xIsAggregate ? X : Y;
-    const fieldChannelAggregate = encoding[fieldChannel].aggregate;
-    const fieldChannelScale = encoding[fieldChannel].scale;
-
-    if (fieldChannelScale && fieldChannelScale.type && fieldChannelScale.type !== ScaleType.LINEAR) {
-      console.warn('Cannot stack non-linear (' + fieldChannelScale.type + ') scale');
-      return null;
-    }
-
-    if (contains(SUM_OPS, fieldChannelAggregate)) {
-      if (contains([BAR, AREA], mark)) {
-        // Bar and Area with sum ops are automatically stacked by default
-        stacked = stacked === undefined ? StackOffset.ZERO : stacked;
-      }
-    } else {
-      console.warn('Cannot stack when the aggregate function is ' + fieldChannelAggregate + '(non-summative).');
-      return null;
-    }
-
-    if (!stacked) {
-      return null;
-    }
-
     return {
       groupbyChannel: xIsAggregate ? (hasYField ? Y : null) : (hasXField ? X : null),
-      fieldChannel: fieldChannel,
+      fieldChannel: xIsAggregate ? X : Y,
       stackByChannels: stackByChannels,
-      offset: stacked
+      offset: stacked || StackOffset.ZERO
     };
   }
   return null;

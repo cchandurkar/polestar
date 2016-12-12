@@ -1,19 +1,21 @@
 import {Channel} from '../../channel';
 import {field, FieldDef} from '../../fielddef';
-import {fieldExpr} from '../../timeunit';
 import {TEMPORAL} from '../../type';
 import {extend, vals, Dict} from '../../util';
 import {VgTransform} from '../../vega.schema';
 
-import {FacetModel} from '../facet';
-import {LayerModel} from '../layer';
-import {Model} from '../model';
+import {FacetModel} from './../facet';
+import {LayerModel} from './../layer';
+import {Model} from './../model';
+import {parseExpression} from './../time';
 
 import {DataComponent} from './data';
+
 
 export namespace timeUnit {
   function parse(model: Model): Dict<VgTransform> {
     return model.reduce(function(timeUnitComponent, fieldDef: FieldDef, channel: Channel) {
+      const ref = field(fieldDef, { nofn: true, datum: true });
       if (fieldDef.type === TEMPORAL && fieldDef.timeUnit) {
 
         const hash = field(fieldDef);
@@ -21,14 +23,14 @@ export namespace timeUnit {
         timeUnitComponent[hash] = {
           type: 'formula',
           field: field(fieldDef),
-          expr: fieldExpr(fieldDef.timeUnit, fieldDef.field)
+          expr: parseExpression(fieldDef.timeUnit, ref)
         };
       }
       return timeUnitComponent;
     }, {});
   }
 
-  export const parseUnit: (model: Model) => Dict<VgTransform> = parse;
+  export const parseUnit = parse;
 
   export function parseFacet(model: FacetModel) {
     let timeUnitComponent = parse(model);

@@ -1,7 +1,5 @@
 import {X, Y, SIZE} from '../../channel';
-import {Orient} from '../../config';
 import {FieldDef, field} from '../../fielddef';
-import {StackProperties} from '../../stack';
 import {Config} from '../../config';
 import {VgValueRef} from '../../vega.schema';
 
@@ -16,15 +14,14 @@ export namespace tick {
   export function properties(model: UnitModel) {
     let p: any = {};
     const config = model.config();
-    const stack = model.stack();
 
     // TODO: support explicit value
 
-    p.xc = x(model.encoding().x, model.scaleName(X), stack, config);
+    p.xc = x(model.encoding().x, model.scaleName(X), config);
 
-    p.yc = y(model.encoding().y, model.scaleName(Y), stack, config);
+    p.yc = y(model.encoding().y, model.scaleName(Y), config);
 
-    if (config.mark.orient === Orient.HORIZONTAL) {
+    if (config.mark.orient === 'horizontal') {
       p.width = size(model.encoding().size, model.scaleName(SIZE), config, (model.scale(X) || {}).bandSize);
       p.height = { value: config.mark.tickThickness };
     } else {
@@ -36,18 +33,13 @@ export namespace tick {
     return p;
   }
 
-  function x(fieldDef: FieldDef, scaleName: string, stack: StackProperties, config: Config): VgValueRef {
+  function x(fieldDef: FieldDef, scaleName: string, config: Config): VgValueRef {
     // x
     if (fieldDef) {
-      if (stack && X === stack.fieldChannel) {
+      if (fieldDef.field) {
         return {
           scale: scaleName,
-          field: field(fieldDef, { suffix: 'end' })
-        };
-      } else if (fieldDef.field) {
-        return {
-          scale: scaleName,
-          field: field(fieldDef, { binSuffix: 'mid' })
+          field: field(fieldDef, { binSuffix: '_mid' })
         };
       } else if (fieldDef.value) {
         return {value: fieldDef.value};
@@ -56,18 +48,13 @@ export namespace tick {
     return { value: config.scale.bandSize / 2 };
   }
 
-  function y(fieldDef: FieldDef, scaleName: string, stack: StackProperties, config: Config): VgValueRef {
+  function y(fieldDef: FieldDef, scaleName: string, config: Config): VgValueRef {
     // y
     if (fieldDef) {
-      if (stack && Y === stack.fieldChannel) {
+      if (fieldDef.field) {
         return {
           scale: scaleName,
-          field: field(fieldDef, { suffix: 'end' })
-        };
-      } else if (fieldDef.field) {
-        return {
-          scale: scaleName,
-          field: field(fieldDef, { binSuffix: 'mid' })
+          field: field(fieldDef, { binSuffix: '_mid' })
         };
       } else if (fieldDef.value) {
         return {value: fieldDef.value};
@@ -94,5 +81,10 @@ export namespace tick {
       scaleBandSize :
       config.scale.bandSize;
     return { value: bandSize / 1.5 };
+  }
+
+  export function labels(model: UnitModel) {
+    // TODO(#240): fill this method
+    return undefined;
   }
 }

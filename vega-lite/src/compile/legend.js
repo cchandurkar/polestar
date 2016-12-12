@@ -1,6 +1,5 @@
 "use strict";
 var channel_1 = require('../channel');
-var datetime_1 = require('../datetime');
 var fielddef_1 = require('../fielddef');
 var mark_1 = require('../mark');
 var type_1 = require('../type');
@@ -8,7 +7,7 @@ var util_1 = require('../util');
 var common_1 = require('./common');
 var scale_1 = require('./scale');
 function parseLegendComponent(model) {
-    return [channel_1.COLOR, channel_1.SIZE, channel_1.SHAPE, channel_1.OPACITY].reduce(function (legendComponent, channel) {
+    return [channel_1.COLOR, channel_1.SIZE, channel_1.SHAPE].reduce(function (legendComponent, channel) {
         if (model.legend(channel)) {
             legendComponent[channel] = parseLegend(model, channel);
         }
@@ -19,7 +18,7 @@ exports.parseLegendComponent = parseLegendComponent;
 function getLegendDefWithScale(model, channel) {
     switch (channel) {
         case channel_1.COLOR:
-            var fieldDef = model.encoding().color;
+            var fieldDef = model.fieldDef(channel_1.COLOR);
             var scale = model.scaleName(useColorLegendScale(fieldDef) ?
                 scale_1.COLOR_LEGEND :
                 channel_1.COLOR);
@@ -28,8 +27,6 @@ function getLegendDefWithScale(model, channel) {
             return { size: model.scaleName(channel_1.SIZE) };
         case channel_1.SHAPE:
             return { shape: model.scaleName(channel_1.SHAPE) };
-        case channel_1.OPACITY:
-            return { opacity: model.scaleName(channel_1.OPACITY) };
     }
     return null;
 }
@@ -39,15 +36,11 @@ function parseLegend(model, channel) {
     var config = model.config();
     var def = getLegendDefWithScale(model, channel);
     def.title = title(legend, fieldDef, config);
-    var format = common_1.numberFormat(fieldDef, legend.format, config, channel);
+    var format = common_1.numberFormat(fieldDef, legend.format, config);
     if (format) {
         def.format = format;
     }
-    var vals = values(legend);
-    if (vals) {
-        def.values = vals;
-    }
-    ['offset', 'orient'].forEach(function (property) {
+    ['offset', 'orient', 'values'].forEach(function (property) {
         var value = legend[property];
         if (value !== undefined) {
             def[property] = value;
@@ -67,22 +60,12 @@ function parseLegend(model, channel) {
 }
 exports.parseLegend = parseLegend;
 function title(legend, fieldDef, config) {
-    if (legend.title !== undefined) {
+    if (typeof legend !== 'boolean' && legend.title) {
         return legend.title;
     }
     return fielddef_1.title(fieldDef, config);
 }
 exports.title = title;
-function values(legend) {
-    var vals = legend.values;
-    if (vals && datetime_1.isDateTime(vals[0])) {
-        return vals.map(function (dt) {
-            return datetime_1.timestamp(dt, true);
-        });
-    }
-    return vals;
-}
-exports.values = values;
 function useColorLegendScale(fieldDef) {
     return fieldDef.type === type_1.ORDINAL || fieldDef.bin || fieldDef.timeUnit;
 }
@@ -108,8 +91,7 @@ var properties;
             case mark_1.AREA:
                 break;
         }
-        var cfg = model.config();
-        var filled = cfg.mark.filled;
+        var filled = model.config().mark.filled;
         var config = channel === channel_1.COLOR ?
             util_1.without(common_1.FILL_STROKE_CONFIG, [filled ? 'fill' : 'stroke', 'strokeDash', 'strokeDashOffset']) :
             util_1.without(common_1.FILL_STROKE_CONFIG, ['strokeDash', 'strokeDashOffset']);
@@ -118,17 +100,14 @@ var properties;
         if (filled) {
             symbols.strokeWidth = { value: 0 };
         }
-        if (channel === channel_1.OPACITY) {
-            delete symbols.opacity;
-        }
         var value;
         if (model.has(channel_1.COLOR) && channel === channel_1.COLOR) {
             if (useColorLegendScale(fieldDef)) {
                 value = { scale: model.scaleName(channel_1.COLOR), field: 'data' };
             }
         }
-        else if (model.encoding().color && model.encoding().color.value) {
-            value = { value: model.encoding().color.value };
+        else if (model.fieldDef(channel_1.COLOR).value) {
+            value = { value: model.fieldDef(channel_1.COLOR).value };
         }
         if (value !== undefined) {
             if (filled) {
@@ -140,31 +119,16 @@ var properties;
         }
         else if (channel !== channel_1.COLOR) {
             symbols[filled ? 'fill' : 'stroke'] = symbols[filled ? 'fill' : 'stroke'] ||
-                { value: cfg.mark.color };
+                { value: model.config().mark.color };
         }
         if (legend.symbolColor !== undefined) {
             symbols.fill = { value: legend.symbolColor };
         }
-        else if (symbols.fill === undefined) {
-            if (cfg.mark.fill !== undefined) {
-                symbols.fill = { value: cfg.mark.fill };
-            }
-            else if (cfg.mark.stroke !== undefined) {
-                symbols.stroke = { value: cfg.mark.stroke };
-            }
+        if (legend.symbolShape !== undefined) {
+            symbols.shape = { value: legend.symbolShape };
         }
-        if (channel !== channel_1.SHAPE) {
-            if (legend.symbolShape !== undefined) {
-                symbols.shape = { value: legend.symbolShape };
-            }
-            else if (cfg.mark.shape !== undefined) {
-                symbols.shape = { value: cfg.mark.shape };
-            }
-        }
-        if (channel !== channel_1.SIZE) {
-            if (legend.symbolSize !== undefined) {
-                symbols.size = { value: legend.symbolSize };
-            }
+        if (legend.symbolSize !== undefined) {
+            symbols.size = { value: legend.symbolSize };
         }
         if (legend.symbolStrokeWidth !== undefined) {
             symbols.strokeWidth = { value: legend.symbolStrokeWidth };
@@ -197,7 +161,7 @@ var properties;
             else if (fieldDef.type === type_1.TEMPORAL) {
                 labelsSpec = util_1.extend({
                     text: {
-                        template: common_1.timeTemplate('datum["data"]', fieldDef.timeUnit, legend.format, legend.shortTimeLabels, config)
+                        template: common_1.timeTemplate('datum.data', fieldDef.timeUnit, legend.format, legend.shortTimeLabels, config)
                     }
                 }, labelsSpec || {});
             }
@@ -206,7 +170,7 @@ var properties;
             labels.align = { value: legend.labelAlign };
         }
         if (legend.labelColor !== undefined) {
-            labels.fill = { value: legend.labelColor };
+            labels.stroke = { value: legend.labelColor };
         }
         if (legend.labelFont !== undefined) {
             labels.font = { value: legend.labelFont };
@@ -225,7 +189,7 @@ var properties;
         var legend = model.legend(channel);
         var titles = {};
         if (legend.titleColor !== undefined) {
-            titles.fill = { value: legend.titleColor };
+            titles.stroke = { value: legend.titleColor };
         }
         if (legend.titleFont !== undefined) {
             titles.font = { value: legend.titleFont };

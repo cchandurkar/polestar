@@ -1,7 +1,6 @@
 import {STACKED_SCALE, SUMMARY} from '../../data';
 import {field} from '../../fielddef';
 import {VgData} from '../../vega.schema';
-import {extend} from '../../util';
 
 import {FacetModel} from './../facet';
 import {LayerModel} from './../layer';
@@ -21,24 +20,16 @@ export namespace stackScale {
       // produce stacked scale
       const groupbyChannel = stackProps.groupbyChannel;
       const fieldChannel = stackProps.fieldChannel;
-
-      let fields = [];
-      const field = model.field(groupbyChannel);
-      if (field) {
-        fields.push(field);
-      }
-
       return {
         name: model.dataName(STACKED_SCALE),
         source: model.dataName(SUMMARY), // always summary because stacked only works with aggregation
-        transform: [extend({
+        transform: [{
           type: 'aggregate',
+          // group by channel and other facets
+          groupby: [model.field(groupbyChannel)],
           // produce sum of the field's value e.g., sum of sum, sum of distinct
           summarize: [{ ops: ['sum'], field: model.field(fieldChannel) }]
-        }, fields.length > 0 ? {
-          // group by channel and other facets
-          groupby: fields
-        } : {})]
+        }]
       };
     }
     return null;

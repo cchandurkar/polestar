@@ -2,7 +2,6 @@ import {X, Y, COLOR, TEXT, SIZE} from '../../channel';
 import {applyMarkConfig, applyColorAndOpacity, numberFormat, timeTemplate} from '../common';
 import {Config} from '../../config';
 import {FieldDef, field} from '../../fielddef';
-import {StackProperties} from '../../stack';
 import {QUANTITATIVE, ORDINAL, TEMPORAL} from '../../type';
 import {VgValueRef} from '../../vega.schema';
 
@@ -22,7 +21,7 @@ export namespace text {
       height: { field: { group: 'height' } },
       fill: {
         scale: model.scaleName(COLOR),
-        field: model.field(COLOR, model.encoding().color.type === ORDINAL ? {prefix: 'rank'} : {})
+        field: model.field(COLOR, model.fieldDef(COLOR).type === ORDINAL ? {prefn: 'rank_'} : {})
       }
     };
   }
@@ -36,16 +35,15 @@ export namespace text {
         'fontStyle', 'radius', 'theta', 'text']);
 
     const config = model.config();
-    const stack = model.stack();
-    const textFieldDef = model.encoding().text;
+    const textFieldDef = model.fieldDef(TEXT);
 
-    p.x = x(model.encoding().x, model.scaleName(X), stack, config, textFieldDef);
+    p.x = x(model.encoding().x, model.scaleName(X), config, textFieldDef);
 
-    p.y = y(model.encoding().y, model.scaleName(Y), stack, config);
+    p.y = y(model.encoding().y, model.scaleName(Y), config);
 
     p.fontSize = size(model.encoding().size, model.scaleName(SIZE), config);
 
-    p.text = text(textFieldDef, model.scaleName(TEXT), config);
+    p.text = text(model.encoding().text, model.scaleName(TEXT), config);
 
     if (model.config().mark.applyColorToBackground && !model.has(X) && !model.has(Y)) {
       p.fill = {value: 'black'}; // TODO: add rules for swapping between black and white
@@ -59,18 +57,13 @@ export namespace text {
     return p;
   }
 
-  function x(fieldDef: FieldDef, scaleName: string, stack: StackProperties, config: Config, textFieldDef:FieldDef): VgValueRef {
+  function x(xFieldDef: FieldDef, scaleName: string, config: Config, textFieldDef:FieldDef): VgValueRef {
     // x
-    if (fieldDef) {
-      if (stack && X === stack.fieldChannel) {
+    if (xFieldDef) {
+      if (xFieldDef.field) {
         return {
           scale: scaleName,
-          field: field(fieldDef, { suffix: 'end' })
-        };
-      } else if (fieldDef.field) {
-        return {
-          scale: scaleName,
-          field: field(fieldDef, { binSuffix: 'mid' })
+          field: field(xFieldDef, { binSuffix: '_mid' })
         };
       }
     }
@@ -78,27 +71,20 @@ export namespace text {
     if (textFieldDef && textFieldDef.type === QUANTITATIVE) {
       return { field: { group: 'width' }, offset: -5 };
     } else {
-      // TODO: allow this to fit
       return { value: config.scale.textBandWidth / 2 };
     }
   }
 
-  function y(fieldDef: FieldDef, scaleName: string, stack: StackProperties, config: Config): VgValueRef {
+  function y(yFieldDef: FieldDef, scaleName: string, config: Config): VgValueRef {
     // y
-    if (fieldDef) {
-      if (stack && Y === stack.fieldChannel) {
+    if (yFieldDef) {
+      if (yFieldDef.field) {
         return {
           scale: scaleName,
-          field: field(fieldDef, { suffix: 'end' })
-        };
-      } else if (fieldDef.field) {
-        return {
-          scale: scaleName,
-          field: field(fieldDef, { binSuffix: 'mid' })
+          field: field(yFieldDef, { binSuffix: '_mid' })
         };
       }
     }
-    // TODO: allow this to fit
     // TODO consider if this should support group: height case too.
     return { value: config.scale.bandSize / 2 };
   }
@@ -124,7 +110,7 @@ export namespace text {
     if (textFieldDef) {
       if (textFieldDef.field) {
         if (QUANTITATIVE === textFieldDef.type) {
-          const format = numberFormat(textFieldDef, config.mark.format, config, TEXT);
+          const format = numberFormat(textFieldDef, config.mark.format, config);
 
           const filter = 'number' + ( format ? ':\'' + format + '\'' : '');
           return {

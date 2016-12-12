@@ -1,10 +1,8 @@
-import {X, Y, COLOR, TEXT, SHAPE, PATH, ORDER, OPACITY, DETAIL, STACK_GROUP_CHANNELS} from '../../channel';
-import {Orient} from '../../config';
-import {has, isAggregate} from '../../encoding';
+import {X, Y, COLOR, TEXT, SHAPE, PATH, ORDER, OPACITY, DETAIL, LABEL, STACK_GROUP_CHANNELS} from '../../channel';
+import {has} from '../../encoding';
 import {OrderChannelDef, FieldDef, field} from '../../fielddef';
 import {AREA, LINE, TEXT as TEXTMARK} from '../../mark';
 import {ScaleType} from '../../scale';
-import {isSortField} from '../../sort';
 import {contains, extend, isArray} from '../../util';
 import {VgStackTransform} from '../../vega.schema';
 
@@ -64,8 +62,8 @@ function parsePathMark(model: UnitModel) { // TODO: extract this into compilePat
 
   if (details.length > 0) { // have level of details - need to facet line into subgroups
     const facetTransform = { type: 'facet', groupby: details };
-    const transform: any[] = model.stack() ?
-      // For stacked area / line, we need to impute missing tuples and stack values
+    const transform: any[] = mark === AREA && model.stack() ?
+      // For stacked area, we need to impute missing tuples and stack values
       // (Mark layer order does not matter for stacked charts)
       stackTransforms(model, true).concat(facetTransform) :
       // For non-stacked path (line/area), we need to facet and possibly sort
@@ -145,6 +143,26 @@ function parseNonPathMark(model: UnitModel) {
     { properties: { update: markCompiler[mark].properties(model) } }
   ));
 
+  if (model.has(LABEL) && markCompiler[mark].labels) {
+    const labelProperties = markCompiler[mark].labels(model);
+
+    // check if we have label method for current mark type.
+    if (labelProperties !== undefined) { // If label is supported
+      // add label group
+      marks.push(extend(
+        {
+          name: model.name('label'),
+          type: 'text'
+        },
+        // If has facet, `from.data` will be added in the cell group.
+        // Otherwise, add it here.
+        isFaceted ? {} : {from: dataFrom},
+        // Properties
+        { properties: { update: labelProperties } }
+      ));
+    }
+  }
+
   return marks;
 }
 
@@ -178,16 +196,7 @@ function sortPathBy(model: UnitModel): string | string[] {
     }
   } else {
     // For both line and area, we sort values based on dimension by default
-    const dimensionChannel = model.config().mark.orient === Orient.HORIZONTAL ? Y : X;
-    const sort = model.sort(dimensionChannel);
-    if (isSortField(sort)) {
-      return '-' + field({
-        aggregate: isAggregate(model.encoding()) ? sort.op : undefined,
-        field: sort.field
-      });
-    } else {
-      return '-' + model.field(dimensionChannel, {binSuffix: 'mid'});
-    }
+    return '-' + model.field(model.config().mark.orient === 'horizontal' ? Y : X, {binSuffix: '_mid'});
   }
 }
 
@@ -228,12 +237,9 @@ function getStackByFields(model: UnitModel) {
       } else {
         const fieldDef: FieldDef = channelEncoding;
         const scale = model.scale(channel);
-        const _field = field(fieldDef, {
-          binSuffix: scale && scale.type === ScaleType.ORDINAL ? 'range' : 'start'
-        });
-        if (!!_field) {
-          fields.push(_field);
-        }
+        fields.push(field(fieldDef, {
+          binSuffix: scale && scale.type === ScaleType.ORDINAL ? '_range' : '_start'
+        }));
       }
     }
     return fields;
@@ -247,7 +253,7 @@ function imputeTransform(model: UnitModel, stackFields: string[]) {
     type: 'impute',
     field: model.field(stack.fieldChannel),
     groupby: stackFields,
-    orderby: [model.field(stack.groupbyChannel, {binSuffix: 'mid'})],
+    orderby: [model.field(stack.groupbyChannel, {binSuffix: '_mid'})],
     method: 'value',
     value: 0
   };
@@ -268,7 +274,7 @@ function stackTransform(model: UnitModel, stackFields: string[]) {
   // add stack transform to mark
   let transform: VgStackTransform = {
     type: 'stack',
-    groupby: [model.field(stack.groupbyChannel, {binSuffix: 'mid'}) || 'undefined'],
+    groupby: [model.field(stack.groupbyChannel, {binSuffix: '_mid'})],
     field: model.field(stack.fieldChannel),
     sortby: sortby,
     output: {

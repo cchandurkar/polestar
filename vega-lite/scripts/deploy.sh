@@ -12,28 +12,12 @@ if ! [ -f vega-lite.js ]; then
   echo "${RED} vega-lite.js not found ${NC}"
   exit 1;
 fi
-if ! [ -f vega-lite.js.map ]; then
-  echo "${RED} vega-lite.js.map not found ${NC}"
-  exit 1;
-fi
-if ! [ -f vega-lite.min.js ]; then
-  echo "${RED} vega-lite.min.js not found ${NC}"
-  exit 1;
-fi
-if ! [ -f vega-lite.min.js.map ]; then
-  echo "${RED} vega-lite.min.js.map not found ${NC}"
-  exit 1;
-fi
 if ! [ -f vega-lite-schema.json ]; then
   echo "${RED} vega-lite-schema.json not found${NC}"
   exit 1;
 fi
 if ! [ -f src/vl.js ]; then
   echo "${RED} src/vl.js not found.  Typescripts may be not compiled.${NC}"
-  exit 1;
-fi
-if ! [ -f src/vl.d.ts ]; then
-  echo "${RED} src/vl.d.ts not found.  Typescript declarations may be not compiled.${NC}"
   exit 1;
 fi
 
@@ -64,7 +48,7 @@ set -e
 git tag -am "Release v$version." "v$version"
 
 # swap back to the clean master and push the new tag
-git checkout 1.x
+git checkout master
 git push --tags
 # now the published tag contains build files which work great with bower.
 

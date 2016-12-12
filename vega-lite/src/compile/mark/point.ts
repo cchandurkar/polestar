@@ -2,7 +2,6 @@ import {X, Y, SHAPE, SIZE} from '../../channel';
 import {Config} from '../../config';
 import {ChannelDefWithLegend, FieldDef, field} from '../../fielddef';
 import {Scale} from '../../scale';
-import {StackProperties} from '../../stack';
 import {VgValueRef} from '../../vega.schema';
 
 import {applyColorAndOpacity} from '../common';
@@ -17,11 +16,10 @@ export namespace point {
     // TODO Use Vega's marks properties interface
     let p: any = {};
     const config = model.config();
-    const stack = model.stack();
 
-    p.x = x(model.encoding().x, model.scaleName(X), stack, config);
+    p.x = x(model.encoding().x, model.scaleName(X), config);
 
-    p.y = y(model.encoding().y, model.scaleName(Y), stack, config);
+    p.y = y(model.encoding().y, model.scaleName(Y), config);
 
     p.size = size(model.encoding().size, model.scaleName(SIZE), model.scale(SIZE), config);
 
@@ -31,43 +29,31 @@ export namespace point {
     return p;
   }
 
-  function x(fieldDef: FieldDef, scaleName: string, stack: StackProperties, config: Config): VgValueRef {
+  function x(fieldDef: FieldDef, scaleName: string, config: Config): VgValueRef {
     // x
     if (fieldDef) {
-      if (stack && X === stack.fieldChannel) {
+      if (fieldDef.field) {
         return {
           scale: scaleName,
-          field: field(fieldDef, { suffix: 'end' })
-        };
-      } else if (fieldDef.field) {
-        return {
-          scale: scaleName,
-          field: field(fieldDef, { binSuffix: 'mid' })
+          field: field(fieldDef, { binSuffix: '_mid' })
         };
       }
       // TODO: fieldDef.value (for layering)
     }
-    // TODO: allow this to fit
     return { value: config.scale.bandSize / 2 };
   }
 
-  function y(fieldDef: FieldDef, scaleName: string, stack: StackProperties, config: Config): VgValueRef {
+  function y(fieldDef: FieldDef, scaleName: string, config: Config): VgValueRef {
     // y
     if (fieldDef) {
-      if (stack && Y === stack.fieldChannel) {
+      if (fieldDef.field) {
         return {
           scale: scaleName,
-          field: field(fieldDef, { suffix: 'end' })
-        };
-      } else if (fieldDef.field) {
-        return {
-          scale: scaleName,
-          field: field(fieldDef, { binSuffix: 'mid' })
+          field: field(fieldDef, { binSuffix: '_mid' })
         };
       }
       // TODO: fieldDef.value (for layering)
     }
-    // TODO: allow this to fit
     return { value: config.scale.bandSize / 2 };
   }
 
@@ -111,6 +97,11 @@ export namespace circle {
   export function properties(model: UnitModel) {
     return point.properties(model, 'circle');
   }
+
+  export function labels(model: UnitModel) {
+    // TODO(#240): fill this method
+    return undefined;
+  }
 }
 
 export namespace square {
@@ -120,5 +111,10 @@ export namespace square {
 
   export function properties(model: UnitModel) {
     return point.properties(model, 'square');
+  }
+
+  export function labels(model: UnitModel) {
+    // TODO(#240): fill this method
+    return undefined;
   }
 }

@@ -1,6 +1,4 @@
 "use strict";
-var mark_1 = require('../mark');
-var aggregate_1 = require('../aggregate');
 var channel_1 = require('../channel');
 var fielddef_1 = require('../fielddef');
 var sort_1 = require('../sort');
@@ -12,7 +10,7 @@ var timeunit_1 = require('../timeunit');
 var unit_1 = require('./unit');
 var spec_1 = require('../spec');
 function buildModel(spec, parent, parentGivenName) {
-    if (spec_1.isSomeFacetSpec(spec)) {
+    if (spec_1.isFacetSpec(spec)) {
         return new facet_1.FacetModel(spec, parent, parentGivenName);
     }
     if (spec_1.isLayerSpec(spec)) {
@@ -32,8 +30,8 @@ exports.FILL_CONFIG = ['fill', 'fillOpacity',
 exports.FILL_STROKE_CONFIG = util_1.union(exports.STROKE_CONFIG, exports.FILL_CONFIG);
 function applyColorAndOpacity(p, model) {
     var filled = model.config().mark.filled;
-    var colorFieldDef = model.encoding().color;
-    var opacityFieldDef = model.encoding().opacity;
+    var colorFieldDef = model.fieldDef(channel_1.COLOR);
+    var opacityFieldDef = model.fieldDef(channel_1.OPACITY);
     if (filled) {
         applyMarkConfig(p, model, exports.FILL_CONFIG);
     }
@@ -45,7 +43,7 @@ function applyColorAndOpacity(p, model) {
     if (model.has(channel_1.COLOR)) {
         colorValue = {
             scale: model.scaleName(channel_1.COLOR),
-            field: model.field(channel_1.COLOR, colorFieldDef.type === type_1.ORDINAL ? { prefix: 'rank' } : {})
+            field: model.field(channel_1.COLOR, colorFieldDef.type === type_1.ORDINAL ? { prefn: 'rank_' } : {})
         };
     }
     else if (colorFieldDef && colorFieldDef.value) {
@@ -54,7 +52,7 @@ function applyColorAndOpacity(p, model) {
     if (model.has(channel_1.OPACITY)) {
         opacityValue = {
             scale: model.scaleName(channel_1.OPACITY),
-            field: model.field(channel_1.OPACITY, opacityFieldDef.type === type_1.ORDINAL ? { prefix: 'rank' } : {})
+            field: model.field(channel_1.OPACITY, opacityFieldDef.type === type_1.ORDINAL ? { prefn: 'rank_' } : {})
         };
     }
     else if (opacityFieldDef && opacityFieldDef.value) {
@@ -71,9 +69,6 @@ function applyColorAndOpacity(p, model) {
     else {
         p[filled ? 'fill' : 'stroke'] = p[filled ? 'fill' : 'stroke'] ||
             { value: model.config().mark.color };
-    }
-    if (!p.fill && util_1.contains([mark_1.BAR, mark_1.POINT, mark_1.CIRCLE, mark_1.SQUARE], model.mark())) {
-        p.fill = { value: 'transparent' };
     }
     if (opacityValue !== undefined) {
         p.opacity = opacityValue;
@@ -94,22 +89,16 @@ function applyMarkConfig(marksProperties, model, propsList) {
     return applyConfig(marksProperties, model.config().mark, propsList);
 }
 exports.applyMarkConfig = applyMarkConfig;
-function numberFormat(fieldDef, format, config, channel) {
+function numberFormat(fieldDef, format, config) {
     if (fieldDef.type === type_1.QUANTITATIVE && !fieldDef.bin) {
-        if (format) {
-            return format;
-        }
-        else if (fieldDef.aggregate === aggregate_1.AggregateOp.COUNT && channel === channel_1.TEXT) {
-            return 'd';
-        }
-        return config.numberFormat;
+        return format || config.numberFormat;
     }
     return undefined;
 }
 exports.numberFormat = numberFormat;
 function sortField(orderChannelDef) {
     return (orderChannelDef.sort === sort_1.SortOrder.DESCENDING ? '-' : '') +
-        fielddef_1.field(orderChannelDef, { binSuffix: 'mid' });
+        fielddef_1.field(orderChannelDef, { binSuffix: '_mid' });
 }
 exports.sortField = sortField;
 function timeTemplate(templateField, timeUnit, format, shortTimeLabels, config) {

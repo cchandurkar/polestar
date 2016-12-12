@@ -1,6 +1,5 @@
-import {COLOR, SIZE, SHAPE, OPACITY, Channel} from '../channel';
+import {COLOR, SIZE, SHAPE, Channel} from '../channel';
 import {Config} from '../config';
-import {DateTime, isDateTime, timestamp} from '../datetime';
 import {FieldDef} from '../fielddef';
 import {Legend} from '../legend';
 import {title as fieldTitle} from '../fielddef';
@@ -13,14 +12,9 @@ import {COLOR_LEGEND, COLOR_LEGEND_LABEL} from './scale';
 import {UnitModel} from './unit';
 import {VgLegend} from '../vega.schema';
 
-/* tslint:disable:no-unused-variable */
-// These imports exist so the TS compiler can name publicly exported members in
-// The automatically created .d.ts correctly
-import {Bin} from '../bin';
-/* tslint:enable:no-unused-variable */
 
 export function parseLegendComponent(model: UnitModel): Dict<VgLegend> {
-  return [COLOR, SIZE, SHAPE, OPACITY].reduce(function(legendComponent, channel) {
+  return [COLOR, SIZE, SHAPE].reduce(function(legendComponent, channel) {
     if (model.legend(channel)) {
       legendComponent[channel] = parseLegend(model, channel);
     }
@@ -31,7 +25,7 @@ export function parseLegendComponent(model: UnitModel): Dict<VgLegend> {
 function getLegendDefWithScale(model: UnitModel, channel: Channel): VgLegend {
   switch (channel) {
     case COLOR:
-      const fieldDef = model.encoding().color;
+      const fieldDef = model.fieldDef(COLOR);
       const scale = model.scaleName(useColorLegendScale(fieldDef) ?
         // To produce ordinal legend (list, rather than linear range) with correct labels:
         // - For an ordinal field, provide an ordinal scale that maps rank values to field values
@@ -46,8 +40,6 @@ function getLegendDefWithScale(model: UnitModel, channel: Channel): VgLegend {
       return { size: model.scaleName(SIZE) };
     case SHAPE:
       return { shape: model.scaleName(SHAPE) };
-    case OPACITY:
-      return { opacity: model.scaleName(OPACITY) };
   }
   return null;
 }
@@ -61,17 +53,13 @@ export function parseLegend(model: UnitModel, channel: Channel): VgLegend {
 
   // 1.1 Add properties with special rules
   def.title = title(legend, fieldDef, config);
-  const format = numberFormat(fieldDef, legend.format, config, channel);
+  const format = numberFormat(fieldDef, legend.format, config);
   if (format) {
     def.format = format;
   }
-  const vals = values(legend);
-  if (vals) {
-    def.values = vals;
-  }
 
   // 1.2 Add properties without rules
-  ['offset', 'orient'].forEach(function(property) {
+  ['offset', 'orient', 'values'].forEach(function(property) {
     const value = legend[property];
     if (value !== undefined) {
       def[property] = value;
@@ -94,22 +82,11 @@ export function parseLegend(model: UnitModel, channel: Channel): VgLegend {
 }
 
 export function title(legend: Legend, fieldDef: FieldDef, config: Config) {
-  if (legend.title !== undefined) {
+  if (typeof legend !== 'boolean' && legend.title) {
     return legend.title;
   }
 
   return fieldTitle(fieldDef, config);
-}
-
-export function values(legend: Legend) {
-  const vals = legend.values;
-  if (vals && isDateTime(vals[0])) {
-    return (vals as DateTime[]).map((dt) => {
-      // normalize = true as end user won't put 0 = January
-      return timestamp(dt, true);
-    });
-  }
-  return vals;
 }
 
 // we have to use special scales for ordinal or binned fields for the color channel
@@ -140,14 +117,14 @@ export namespace properties {
         break;
     }
 
-    const cfg = model.config();
-    const filled = cfg.mark.filled;
+    const filled = model.config().mark.filled;
+
 
     let config = channel === COLOR ?
-        /* For color's legend, do not set fill (when filled) or stroke (when unfilled) property from config because the legend's `fill` or `stroke` scale should have precedence */
+        /* For color's legend, do not set fill (when filled) or stroke (when unfilled) property from config because the the legend's `fill` or `stroke` scale should have precedence */
         without(FILL_STROKE_CONFIG, [ filled ? 'fill' : 'stroke', 'strokeDash', 'strokeDashOffset']) :
         /* For other legend, no need to omit. */
-        without(FILL_STROKE_CONFIG, ['strokeDash', 'strokeDashOffset']);
+         without(FILL_STROKE_CONFIG, ['strokeDash', 'strokeDashOffset']);
 
     config = without(config, ['strokeDash', 'strokeDashOffset']);
 
@@ -157,19 +134,14 @@ export namespace properties {
       symbols.strokeWidth = { value: 0 };
     }
 
-    // Avoid override default mapping for opacity channel
-    if (channel === OPACITY) {
-      delete symbols.opacity;
-    }
-
     let value;
     if (model.has(COLOR) && channel === COLOR) {
       if (useColorLegendScale(fieldDef)) {
         // for color legend scale, we need to override
         value = { scale: model.scaleName(COLOR), field: 'data' };
       }
-    } else if (model.encoding().color && model.encoding().color.value) {
-      value = { value: model.encoding().color.value };
+    } else if (model.fieldDef(COLOR).value) {
+      value = { value: model.fieldDef(COLOR).value };
     }
 
     if (value !== undefined) {
@@ -183,32 +155,19 @@ export namespace properties {
       // For non-color legend, apply color config if there is no fill / stroke config.
       // (For color, do not override scale specified!)
       symbols[filled ? 'fill' : 'stroke'] = symbols[filled ? 'fill' : 'stroke'] ||
-        {value: cfg.mark.color};
+        {value: model.config().mark.color};
     }
 
     if (legend.symbolColor !== undefined) {
       symbols.fill = {value: legend.symbolColor};
-    } else if (symbols.fill === undefined) {
-      // fall back to mark config colors for legend fill
-      if (cfg.mark.fill !== undefined) {
-        symbols.fill = {value: cfg.mark.fill};
-      } else if (cfg.mark.stroke !== undefined) {
-        symbols.stroke = {value: cfg.mark.stroke};
-      }
     }
 
-    if (channel !== SHAPE) {
-      if (legend.symbolShape !== undefined) {
-        symbols.shape = {value: legend.symbolShape};
-      } else if (cfg.mark.shape !== undefined) {
-        symbols.shape = {value: cfg.mark.shape};
-      }
+    if (legend.symbolShape !== undefined) {
+      symbols.shape = {value: legend.symbolShape};
     }
 
-    if (channel !== SIZE) {
-      if (legend.symbolSize !== undefined) {
-        symbols.size = {value: legend.symbolSize};
-      }
+    if (legend.symbolSize !== undefined) {
+      symbols.size = {value: legend.symbolSize};
     }
 
     if (legend.symbolStrokeWidth !== undefined) {
@@ -244,7 +203,7 @@ export namespace properties {
       } else if (fieldDef.type === TEMPORAL) {
         labelsSpec = extend({
           text: {
-            template: timeTemplate('datum["data"]', fieldDef.timeUnit, legend.format, legend.shortTimeLabels, config)
+            template: timeTemplate('datum.data', fieldDef.timeUnit, legend.format, legend.shortTimeLabels, config)
           }
         }, labelsSpec || {});
       }
@@ -255,7 +214,7 @@ export namespace properties {
     }
 
     if (legend.labelColor !== undefined) {
-      labels.fill = {value: legend.labelColor};
+      labels.stroke = {value: legend.labelColor};
     }
 
     if (legend.labelFont !== undefined) {
@@ -281,7 +240,7 @@ export namespace properties {
     let titles:any = {};
 
     if (legend.titleColor !== undefined) {
-      titles.fill = {value: legend.titleColor};
+      titles.stroke = {value: legend.titleColor};
     }
 
     if (legend.titleFont !== undefined) {

@@ -5,7 +5,7 @@ import {ExtendedUnitSpec} from './spec';
 import {toMap} from './util';
 import {BAR} from './mark';
 
-export interface RequiredChannelMap {
+interface RequiredChannelMap {
   [mark: string]: Array<string>;
 }
 
@@ -19,7 +19,7 @@ export const DEFAULT_REQUIRED_CHANNEL_MAP: RequiredChannelMap = {
   area: ['x', 'y']
 };
 
-export interface SupportedChannelMap {
+interface SupportedChannelMap {
   [mark: string]: {
     [channel: string]: number
   };

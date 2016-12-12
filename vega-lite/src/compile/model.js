@@ -4,16 +4,12 @@ var encoding_1 = require('../encoding');
 var fielddef_1 = require('../fielddef');
 var scale_1 = require('../scale');
 var util_1 = require('../util');
-var scale_2 = require('./scale');
 var NameMap = (function () {
     function NameMap() {
         this._nameMap = {};
     }
     NameMap.prototype.rename = function (oldName, newName) {
         this._nameMap[oldName] = newName;
-    };
-    NameMap.prototype.has = function (name) {
-        return this._nameMap[name] !== undefined;
     };
     NameMap.prototype.get = function (name) {
         while (this._nameMap[name]) {
@@ -34,13 +30,6 @@ var Model = (function () {
         this._data = spec.data;
         this._description = spec.description;
         this._transform = spec.transform;
-        if (spec.transform) {
-            if (spec.transform.filterInvalid === undefined &&
-                spec.transform['filterNull'] !== undefined) {
-                spec.transform.filterInvalid = spec.transform['filterNull'];
-                console.warn('filterNull is deprecated. Please use filterInvalid instead.');
-            }
-        }
         this.component = { data: null, layout: null, mark: null, scale: null, axis: null, axisGroup: null, gridGroup: null, legend: null };
     }
     Model.prototype.parse = function () {
@@ -123,25 +112,15 @@ var Model = (function () {
     Model.prototype.sizeName = function (size) {
         return this._sizeNameMap.get(this.name(size, '_'));
     };
-    Model.prototype.calculate = function () {
-        return this._transform ? this._transform.calculate : undefined;
-    };
-    Model.prototype.filterInvalid = function () {
-        var transform = this._transform || {};
-        if (transform.filterInvalid === undefined) {
-            return this.parent() ? this.parent().filterInvalid() : undefined;
-        }
-        return transform.filterInvalid;
-    };
-    Model.prototype.filter = function () {
-        return this._transform ? this._transform.filter : undefined;
+    Model.prototype.transform = function () {
+        return this._transform || {};
     };
     Model.prototype.field = function (channel, opt) {
         if (opt === void 0) { opt = {}; }
         var fieldDef = this.fieldDef(channel);
         if (fieldDef.bin) {
             opt = util_1.extend({
-                binSuffix: this.scale(channel).type === scale_1.ScaleType.ORDINAL ? 'range' : 'start'
+                binSuffix: this.scale(channel).type === scale_1.ScaleType.ORDINAL ? '_range' : '_start'
             }, opt);
         }
         return fielddef_1.field(fieldDef, opt);
@@ -156,16 +135,8 @@ var Model = (function () {
     Model.prototype.renameScale = function (oldName, newName) {
         this._scaleNameMap.rename(oldName, newName);
     };
-    Model.prototype.scaleName = function (originalScaleName, parse) {
-        var channel = util_1.contains([scale_2.COLOR_LEGEND, scale_2.COLOR_LEGEND_LABEL], originalScaleName) ? 'color' : originalScaleName;
-        if (parse) {
-            return this.name(originalScaleName + '');
-        }
-        if ((this._scale && this._scale[channel]) ||
-            this._scaleNameMap.has(this.name(originalScaleName + ''))) {
-            return this._scaleNameMap.get(this.name(originalScaleName + ''));
-        }
-        return undefined;
+    Model.prototype.scaleName = function (channel) {
+        return this._scaleNameMap.get(this.name(channel + ''));
     };
     Model.prototype.sort = function (channel) {
         return (this.mapping()[channel] || {}).sort;

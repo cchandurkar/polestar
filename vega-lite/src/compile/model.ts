@@ -6,22 +6,14 @@ import {channelMappingReduce, channelMappingForEach} from '../encoding';
 import {FieldDef, FieldRefOption, field} from '../fielddef';
 import {Legend} from '../legend';
 import {Scale, ScaleType} from '../scale';
-import {SortField, SortOrder} from '../sort';
 import {BaseSpec} from '../spec';
 import {Transform} from '../transform';
-import {contains, extend, flatten, vals, warning, Dict} from '../util';
+import {extend, flatten, vals, warning, Dict} from '../util';
 import {VgData, VgMarkGroup, VgScale, VgAxis, VgLegend} from '../vega.schema';
 
 import {DataComponent} from './data/data';
 import {LayoutComponent} from './layout';
-import {ScaleComponents, COLOR_LEGEND, COLOR_LEGEND_LABEL} from './scale';
-
-/* tslint:disable:no-unused-variable */
-// These imports exist so the TS compiler can name publicly exported members in
-// The automatically created .d.ts correctly
-import {Formula} from '../transform';
-import {OneOfFilter, EqualFilter, RangeFilter} from '../filter';
-/* tslint:enable:no-unused-variable */
+import {ScaleComponents} from './scale';
 
 /**
  * Composable Components that are intermediate results of the parsing phase of the
@@ -49,7 +41,7 @@ export interface Component {
   mark: VgMarkGroup[];
 }
 
-class NameMap implements NameMapInterface {
+class NameMap {
   private _nameMap: Dict<string>;
 
   constructor() {
@@ -60,26 +52,15 @@ class NameMap implements NameMapInterface {
     this._nameMap[oldName] = newName;
   }
 
-
-  public has(name: string): boolean {
-    return this._nameMap[name] !== undefined;
-  }
-
   public get(name: string): string {
     // If the name appears in the _nameMap, we need to read its new name.
-    // We have to loop over the dict just in case the new name also gets renamed.
+    // We have to loop over the dict just in case, the new name also gets renamed.
     while (this._nameMap[name]) {
       name = this._nameMap[name];
     }
 
     return name;
   }
-}
-
-export interface NameMapInterface {
-  rename(oldname: string, newName: string): void;
-  has(name: string): boolean;
-  get(name: string): string;
 }
 
 export abstract class Model {
@@ -90,13 +71,13 @@ export abstract class Model {
   protected _data: Data;
 
   /** Name map for data sources, which can be renamed by a model's parent. */
-  protected _dataNameMap: NameMapInterface;
+  protected _dataNameMap: NameMap;
 
   /** Name map for scales, which can be renamed by a model's parent. */
-  protected _scaleNameMap: NameMapInterface;
+  protected _scaleNameMap: NameMap;
 
   /** Name map for size, which can be renamed by a model's parent. */
-  protected _sizeNameMap: NameMapInterface;
+  protected _sizeNameMap: NameMap;
 
   protected _transform: Transform;
   protected _scale: Dict<Scale>;
@@ -126,14 +107,6 @@ export abstract class Model {
 
     this._description = spec.description;
     this._transform = spec.transform;
-
-    if (spec.transform) {
-      if (spec.transform.filterInvalid === undefined &&
-          spec.transform['filterNull'] !== undefined) {
-        spec.transform.filterInvalid = spec.transform['filterNull'];
-        console.warn('filterNull is deprecated. Please use filterInvalid instead.');
-      }
-    }
 
     this.component = {data: null, layout: null, mark: null, scale: null, axis: null, axisGroup: null, gridGroup: null, legend: null};
   }
@@ -287,21 +260,8 @@ export abstract class Model {
 
   public abstract dataTable(): string;
 
-  // TRANSFORMS
-  public calculate() {
-    return this._transform ? this._transform.calculate : undefined;
-  }
-
-  public filterInvalid() {
-    const transform = this._transform || {};
-    if (transform.filterInvalid === undefined) {
-      return this.parent() ? this.parent().filterInvalid() : undefined;
-    }
-    return transform.filterInvalid;
-  }
-
-  public filter() {
-    return this._transform ? this._transform.filter : undefined;
+  public transform(): Transform {
+    return this._transform || {};
   }
 
   /** Get "field" reference for vega */
@@ -310,7 +270,7 @@ export abstract class Model {
 
     if (fieldDef.bin) { // bin has default suffix that depends on scaleType
       opt = extend({
-        binSuffix: this.scale(channel).type === ScaleType.ORDINAL ? 'range' : 'start'
+        binSuffix: this.scale(channel).type === ScaleType.ORDINAL ? '_range' : '_start'
       }, opt);
     }
 
@@ -333,35 +293,12 @@ export abstract class Model {
     this._scaleNameMap.rename(oldName, newName);
   }
 
-
-  /**
-   * @return scale name for a given channel after the scale has been parsed and named.
-   * (DO NOT USE THIS METHOD DURING SCALE PARSING, use model.name() instead)
-   */
-  public scaleName(originalScaleName: Channel|string, parse?: boolean): string {
-    const channel = contains([COLOR_LEGEND, COLOR_LEGEND_LABEL], originalScaleName) ? 'color' : originalScaleName;
-
-    if (parse) {
-      // During the parse phase always return a value
-      // No need to refer to rename map because a scale can't be renamed
-      // before it has the original name.
-      return this.name(originalScaleName + '');
-    }
-
-    // If there is a scale for the channel, it should either
-    // be in the _scale mapping or exist in the name map
-    if (
-        // in the scale map (the scale is not merged by its parent)
-        (this._scale && this._scale[channel]) ||
-        // in the scale name map (the the scale get merged by its parent)
-        this._scaleNameMap.has(this.name(originalScaleName + ''))
-      ) {
-      return this._scaleNameMap.get(this.name(originalScaleName + ''));
-    }
-    return undefined;
+  /** returns scale name for a given channel */
+  public scaleName(channel: Channel|string): string {
+    return this._scaleNameMap.get(this.name(channel + ''));
   }
 
-  public sort(channel: Channel): SortField | SortOrder {
+  public sort(channel: Channel) {
     return (this.mapping()[channel] || {}).sort;
   }
 

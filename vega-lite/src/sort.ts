@@ -18,7 +18,3 @@ export interface SortField {
 
   order?: SortOrder;
 }
-
-export function isSortField(sort: SortOrder | SortField): sort is SortField {
-  return !!sort && !!sort['field'] && !!sort['op'];
-}
