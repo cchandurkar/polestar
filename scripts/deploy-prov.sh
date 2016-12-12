@@ -25,7 +25,7 @@ npm run build
 rm -rf dist/.git
 mv gh-pages/.git dist
 cp -r src/provenance dist
-dp -r bower_components/vega-lite dist
+cp -r bower_components/vega-lite dist
 rm -rf gh-pages
 cd dist
 git add --all
